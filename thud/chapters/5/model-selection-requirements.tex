@@ -1,0 +1,30 @@
+\section{Requirements for Model Selection and Probing}
+\label{sec:model-selection-requirements}
+
+\subsection{Model Pool}
+\label{subsec:model-pool-requirements}
+
+\hyperref[rq:rq3]{\textbf{RQ3}} asks whether the best-performing layer falls at a consistent relative depth across different models. To answer this research question, data must be gathered from more than one LLM, from different model families and with different parameter sizes, from a few billion to several tens of billions. The pool of models must also satisfy the following requirements.
+
+\begin{itemize}
+    \item The models must vary in layer depth, so that models with more or fewer hidden layers can be compared. Layer depth is not fixed by parameter size alone: two models of similar size can stack a different number of layers, so depth is treated as a separate axis.
+    \item Each model must be instruction-tuned, as described in Section~\ref{subsec:instruction-tuning}. This training is required for the model to read the dataset's routing prompt and return a routing decision, since the coordinator's own accuracy on this decision is one of the references that a probe is evaluated against, as Section~\ref{subsec:rq1-derivation} states.
+    \item Each model must support tool calling, so that the coordinator can route the request to a sub-agent by invoking it as a tool.
+    \item Each model must generate with sampling disabled (greedy decoding, described in Section~\ref{subsec:decoding}), so that its routing decision is deterministic and the run can be replicated.
+\end{itemize}
+
+Each model's weights must also be publicly available, so it can be run locally with a library such as Hugging Face's Transformers, which allows the model's hidden states to be read directly from the forward pass at every layer. A closed-source model, such as the models that OpenAI or Anthropic serve, is reached only through a network API. This API returns generated text and does not return the internal hidden states.
+
+\subsection{Probe Input Position}
+\label{subsec:probe-position-requirements}
+
+Section~\ref{subsec:last-token} explains why the position a probe reads within the prompt matters. Most of the reviewed literature reads the hidden state at the last token of the prompt, before generation: this is the position used by Sun et al., by Cencerrado et al., and by Varshney et al., described in Section~\ref{subsec:hidden-state-probing}. LatentGate instead pools the hidden states over every token of the query \cite{ratnakarLatentGateLowLatencySemantic2026}.
+
+This work reads hidden states from the last token of the prompt. Most of the reviewed literature reports good accuracy at this position, and reading only the last token is more efficient than probing every token of the query.
+
+\subsection{Anisotropy and Whitening}
+\label{subsec:anisotropy-scope}
+
+At the center of LatentGate's method is a correction for anisotropy (Section~\ref{subsec:anisotropy}), applied through PCA-whitening before its probe is trained. This correction spreads the representations apart along the directions where they concentrate. It removes the shared component that makes representations of different classes look similar, which makes the classes easier for a linear probe to separate and raises its accuracy \cite{ratnakarLatentGateLowLatencySemantic2026}.
+
+This work does not apply a whitening correction like LatentGate does, since raising the probe's peak accuracy is not a goal of this work. The classifier used as a probe is trained directly on the hidden states.

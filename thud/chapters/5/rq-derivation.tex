@@ -1,0 +1,36 @@
+\section{From the Literature Gap to the Research Questions}
+\label{sec:rq-derivation}
+
+Section~\ref{subsec:literature-gap} shows that no reviewed work evaluates a probe as an evaluation mechanism checked against the model's own decision, across both single-turn and multi-turn settings. Each research question below draws on one or more of these gaps.
+
+\subsection{Probing as an Evaluation Mechanism}
+\label{subsec:rq1-derivation}
+
+\phantomsection\label{rq:rq1}
+\input{chapters/rq/rq1.tex}
+
+\noindent The probes reviewed in Section~\ref{sec:related-work-routing} either replace the routing decision outright, as LatentGate does, or check a model's own success on a task unrelated to routing, as Healy et al. and Cencerrado et al. do. None evaluates whether a probe can serve as a check on a coordinator's own routing choice, compared against the coordinator's own accuracy. The comparison targets requests where the wording does not determine the correct sub-agent. When the wording determines it, the probe's accuracy is explained by the request text, and the comparison against the coordinator does not isolate the contribution of the hidden states.
+
+\subsection{Comparison with the Text-Only Classifiers}
+\label{subsec:rq2-derivation}
+
+\phantomsection\label{rq:rq2}
+\input{chapters/rq/rq2.tex}
+
+\noindent \hyperref[rq:rq1]{\textbf{RQ1}} compares the probe against the coordinator. This question compares the probe against the text-only classifiers, on the same requests. A probe can serve as an evaluation instrument only if it outperforms the text-only classifiers by a clear margin, on a dataset confirmed to be hard for those classifiers. Otherwise, a text-only classifier is sufficient.
+
+\subsection{Consistency of the Optimal Layer}
+\label{subsec:rq3-derivation}
+
+\phantomsection\label{rq:rq3}
+\input{chapters/rq/rq3.tex}
+
+\noindent Comparing a probe against the coordinator and against the text-only classifiers requires training the probe at every layer of every model tested, since no single layer is known in advance to carry the routing decision best. This setup raises a further question: whether the best-performing layer falls at the same position across different models, or varies. The models tested differ in layer count, so the position is expressed as a fraction of network depth to make it comparable. If that relative depth is consistent, an evaluation probe could be trained on a fixed subset of layers, without a separate search to determine the optimal layer for each new model.
+
+\subsection{Disagreement as a Misrouting Flag}
+\label{subsec:rq4-derivation}
+
+\phantomsection\label{rq:rq4}
+\input{chapters/rq/rq4.tex}
+
+\noindent This question asks whether the disagreement between the probe and the coordinator can serve as a runtime flag for likely misrouting. Such a flag could signal a trajectory likely to fail before the selected sub-agent runs. It could stop the run early, or prompt the coordinator to re-evaluate its routing choice in response to the disagreement.

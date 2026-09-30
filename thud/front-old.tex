@@ -1,0 +1,48 @@
+\makeatletter
+\AddToHook{begindocument/before}{\geometry{bindingoffset=0pt}}
+\gdef\thud@universityC{%
+    \centering
+    \includegraphics[width=0.15\textwidth]{banners/black/logo.pdf}\\
+    \begin{center}
+        UNIVERSITY OF UDINE\\
+        Department of Mathematics, Computer Science and Physics
+    \end{center}
+    \hrulefill
+}
+\def\thud@oldcover{%
+    \begin{titlepage}%
+        \noindent%
+        \begin{minipage}[t][\textheight][s]{.99\linewidth}%
+        	\sffamily
+            \let\footnotesize\small
+            \let\footnoterule\relax
+            {\Large\textsc{\thud@universityC}}%
+            \ifx\thud@chair\@empty\else\par\medskip\chairname: \thud@chair\fi%
+            \vskip 5em\relax%
+            \begin{center}%
+                {\Large\scshape \thesisname \ifx\thud@phdnumber\@empty\else\space\thud@phdnumber\fi\par}
+                \vskip 4em\relax%
+                {\Huge\bfseries\@title\par}
+                \vskip 5em\@plus1fill\relax%
+                {\large%
+                    \parbox[t]{.4\linewidth}{%
+                        \let\thud@candidate\@author
+                        \thud@showentry*{candidate}%
+                    }%
+                    \qquad%
+                    \parbox[t]{.4\linewidth}{%
+                        \thud@showentry{supervisor}%
+                        \thud@showentry{cosupervisor}%
+                        \thud@showentry{tutor}%
+                        \thud@showentry{reviewer}%
+                    }%
+                }
+                \par\vskip 1em\@plus1fill\relax%
+                {\large\ifx\thud@cycle\@empty\datename\else\cyclename~\thud@cycle\ --- \shortdatename\fi~\@date}\par
+            \end{center}%
+        \end{minipage}%
+    \end{titlepage}%
+}
+\AddToHook{begindocument/end}{\thud@oldcover\enddocument}
+\makeatother
+\input{thesis}

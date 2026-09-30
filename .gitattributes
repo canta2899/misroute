@@ -1,0 +1,5 @@
+# keep the thesis sources out of GitHub's language stats
+*.tex linguist-detectable=false
+*.cls linguist-detectable=false
+*.bst linguist-detectable=false
+*.bib linguist-detectable=false

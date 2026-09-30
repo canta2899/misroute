@@ -1,0 +1,17 @@
+\chapter{Evaluation of LLMs and LLM-based Agents}
+\label{chap:evaluating-agents}
+
+The performance measure of Section~\ref{subsec:rationality} drives action selection during the run of a classical agent, since the decide step selects the action expected to maximize it. An LLM-based agent has no such measure active during the run. It is not built for one task, and its objective is stated in the prompt as natural language.
+
+Whether the behavior obtained matches the behavior intended is decided only after the run, by an evaluation setup that defines both what to check and how to check it. That criterion is applied to the text an LLM-based agent produces as output, but also to the trajectory one or more LLM-based agents may produce while pursuing their goal. This chapter reviews how that criterion is constructed, first for the language model as the core agent component, then for the LLM-based agent built on top of it. It also reviews the additional evaluation problems that construction introduces.
+
+\input{chapters/4/text-matching-benchmarks.tex}
+\input{chapters/4/benchmark-saturation.tex}
+\input{chapters/4/holistic-evaluation.tex}
+\input{chapters/4/llm-as-judge.tex}
+\input{chapters/4/agent-evaluation-problem.tex}
+\input{chapters/4/trajectory-aware-evaluation.tex}
+\input{chapters/4/multi-agent-trace.tex}
+\input{chapters/4/failure-attribution.tex}
+\input{chapters/4/offline-online-evaluation.tex}
+\input{chapters/4/evaluating-coordinator.tex}

@@ -1,0 +1,8 @@
+\subsection{Structured output and function calling}
+\label{sec:structured-output}
+
+A language model emits tokens, so any output with a defined shape has to be produced as text that conforms to that shape. OpenAI introduced function calling as an API feature, later also referred to as tool calling. It makes this a first-class feature of the model interface \cite{FunctionCallingOther2024}. A set of functions is declared with names, descriptions, and argument schemas, and the model returns a structured object that names one of the declared functions and supplies its arguments, instead of free-form text \cite{FunctionCallingOther2024}.
+
+The declarations are part of the prompt: the names, descriptions, and schemas of the available functions are rendered into the token sequence the model processes.
+
+The model does not execute the function it calls. The calling application runs the named function with the supplied arguments, and the result is sent back to the model as a new turn. The model then continues generation using that result, typically to produce a final response that incorporates it \cite{FunctionCallingOther2024}.

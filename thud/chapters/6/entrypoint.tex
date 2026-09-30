@@ -1,0 +1,12 @@
+\chapter{Dataset Construction}
+\label{chap:dataset-construction}
+
+As determined in Section~\ref{sec:related-work-routing}, two synthetic datasets are generated to answer the research questions: one for single-turn requests, one for multi-turn requests. A large language model is prompted to generate the requests for a coordinator agent, each routable to exactly one of the available sub-agents. This chapter describes the design of these datasets, the pipeline that generates them, and the analysis used to validate them. Section~\ref{sec:dataset-overview} presents the taxonomy of sub-agents and the structure of a sample. Section~\ref{sec:generation-pipeline} describes the pipeline stages that produce the requests. Section~\ref{sec:dataset-baselines} and Section~\ref{sec:statistical-validation} report the baselines and the statistical analysis used to confirm that the dataset is suitable for the research questions.
+
+\input{chapters/6/dataset-overview.tex}
+
+\input{chapters/6/generation-pipeline.tex}
+
+\input{chapters/6/baselines.tex}
+
+\input{chapters/6/statistical-validation.tex}

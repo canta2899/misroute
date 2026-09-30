@@ -1,0 +1,90 @@
+\section{The Probe as an Evaluation Flag}
+\label{sec:ch8-error-flag}
+
+\phantomsection\label{rq:ch8-rq4-intro}
+\input{chapters/rq/rq4.tex}
+
+\noindent To answer \hyperref[rq:ch8-rq4-intro]{\textbf{RQ4}}, the probe is measured as a flag for a likely misroute. Section~\ref{sec:ch8-overview} shows that the probe is more accurate than the coordinator on the whole dataset, in all the runs. When the probe and the coordinator predict a different sub-agent for the same request, at most one of them is right, and the coordinator is the more likely one to be wrong, because it is the less accurate of the two. The \emph{disagreement flag} is raised on a sample when the out-of-fold prediction of the probe differs from the sub-agent predicted by the coordinator. The flag is measured against the error rate of the coordinator, to determine whether it marks the misroutes more often than the base rate and how many correct decisions it marks by mistake.
+
+\subsection{Metrics}
+\label{subsec:ch8-error-flag-metrics}
+
+Four metrics are used to measure the quality of the disagreement flag. Each metric treats an error of the coordinator as the positive class and a raised flag as a positive prediction:
+
+\begin{itemize}
+    \item \textbf{precision}: the share of the flagged samples where the coordinator is wrong,
+    \[
+        P(\text{coordinator wrong} \mid \text{flagged})
+    \]
+    \item \textbf{recall}: the share of the coordinator's errors that are flagged,
+    \[
+        P(\text{flagged} \mid \text{coordinator wrong})
+    \]
+    \item \textbf{F1-score}: the harmonic mean of precision and recall, a single value for how well the flag covers the coordinator's errors,
+    \[
+        2 \cdot \frac{\text{precision} \cdot \text{recall}}{\text{precision} + \text{recall}}
+    \]
+    \item \textbf{false positive rate} (FPR): the share of the coordinator's correct decisions that are flagged, the same metric that Section~\ref{subsec:ch7-metrics} uses for the ROC curve,
+    \[
+        P(\text{flagged} \mid \text{coordinator right})
+    \]
+\end{itemize}
+
+The \emph{base error rate} is the share of the samples of a run where the coordinator predicts the wrong sub-agent, and it varies from 0.112 to 0.298 across the runs. A low base error rate leaves few errors for the flag to hit, which lowers precision and the F1-score. Precision and the F1-score must therefore be read against the base error rate of their own run, reported next to them. The F1-score measures the quality of the flag on one run. A model with a high base error rate gives the flag more errors to find, so it can reach a higher F1-score while its coordinator routes less accurately.
+
+The F1-score is computed from precision and recall only, so it does not count the correct decisions of the coordinator that the flag leaves unmarked. The false positive rate measures the share of the correct decisions that are flagged by the probe.
+
+\subsection{Results}
+\label{subsec:ch8-error-flag-results}
+
+Table~\ref{tab:ch8-error-flag} reports the four metrics of each run, together with the base error rate of the coordinator and the margin $\Delta$ of Table~\ref{tab:ch8-overview}.
+
+The precision of the flag (the share of the flagged samples where the coordinator is wrong) is between 0.598 and 0.826. In each of the fourteen runs it exceeds the base error rate of the coordinator in that same run, which is between 0.112 and 0.298. The recall (the share of the errors of the coordinator that are flagged) is between 0.540 and 0.797. The false positive rate is between 0.028 and 0.160, and below 0.100 in twelve of the runs. The F1-score, which combines precision and recall, is between 0.601 and 0.811.
+
+The flag is less reliable on the multi-turn dataset. Its false positive rate rises for six of the seven models, by between 0.015 and 0.068, and is unchanged for Qwen2.5 72B. The probe loses more accuracy than the coordinator in the multi-turn setting (Section~\ref{subsec:ch8-multi-turn}), and a probe with lower accuracy raises the flag on more of the correct decisions of the coordinator.
+
+\begin{table}[H]
+    \centering
+    \small
+    \begin{tabular}{@{}lcccccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Base error} & \textbf{FPR} & $\boldsymbol{\Delta}$ \\
+        \midrule
+        \multicolumn{7}{@{}l}{\textit{Single-turn}} \\
+        \midrule
+        \texttt{gemma4-e2b-it}     & 0.738 & 0.700 & 0.718 & 0.264 & 0.089 & 0.112 \\
+        \texttt{qwen3-4b}          & 0.756 & 0.717 & 0.736 & 0.248 & 0.077 & 0.112 \\
+        \texttt{qwen3-8b}          & 0.683 & 0.670 & 0.677 & 0.228 & \worst{0.092} & 0.073 \\
+        \texttt{gemma4-12b-it}     & 0.741 & 0.560 & \worst{0.638} & 0.127 & \best{0.028} & 0.043 \\
+        \texttt{gemma4-26b-a4b-it} & 0.681 & 0.600 & \worst{0.638} & 0.112 & 0.035 & 0.033 \\
+        \texttt{llama3.3-70b}      & 0.779 & 0.763 & 0.771 & 0.230 & 0.065 & 0.124 \\
+        \texttt{qwen2.5-72b}       & 0.826 & 0.797 & \best{0.811} & 0.239 & 0.053 & 0.146 \\
+        \midrule
+        \multicolumn{7}{@{}l}{\textit{Multi-turn}} \\
+        \midrule
+        \texttt{gemma4-e2b-it}     & 0.712 & 0.778 & 0.744 & 0.298 & 0.134 & 0.080 \\
+        \texttt{qwen3-4b}          & 0.703 & 0.688 & 0.696 & 0.255 & 0.099 & 0.069 \\
+        \texttt{qwen3-8b}          & 0.598 & 0.671 & 0.632 & 0.262 & \worst{0.160} & 0.006 \\
+        \texttt{gemma4-12b-it}     & 0.679 & 0.540 & \worst{0.601} & 0.145 & \best{0.043} & 0.024 \\
+        \texttt{gemma4-26b-a4b-it} & 0.673 & 0.639 & 0.655 & 0.144 & 0.052 & 0.022 \\
+        \texttt{llama3.3-70b}      & 0.736 & 0.653 & 0.692 & 0.264 & 0.084 & 0.074 \\
+        \texttt{qwen2.5-72b}       & 0.805 & 0.725 & \best{0.763} & 0.232 & 0.053 & 0.107 \\
+        \bottomrule
+    \end{tabular}
+    \caption[Probe read as a flag on the coordinator's decision]{The probe read as a flag on the coordinator's decision: precision, recall, the F1-score, the coordinator's base error rate, the false positive rate (FPR), and the margin $\Delta$ of Table~\ref{tab:ch8-overview}. In each dataset, the best F1-score and FPR are in bold and the worst are underlined.}
+    \label{tab:ch8-error-flag}
+\end{table}
+
+\FloatBarrier
+
+\subsection{Answer to RQ4}
+\label{subsec:ch8-rq4-answer}
+
+\phantomsection\label{rq:ch8-rq4}
+\input{chapters/rq/rq4.tex}
+
+\noindent Yes. For every model, on both datasets, the precision of the flag is between 0.598 and 0.826 and above the base error rate of that model, which is between 0.112 and 0.298. The recall is between 0.540 and 0.797, and the false positive rate is between 0.028 and 0.160, below 0.100 in twelve of the fourteen runs.
+
+The flag is less reliable in the multi-turn setting, where its false positive rate rises for six of the seven models, by between 0.015 and 0.068.
+
+\FloatBarrier

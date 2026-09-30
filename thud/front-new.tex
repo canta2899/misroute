@@ -1,0 +1,9 @@
+\makeatletter
+\AddToHook{begindocument/before}{\geometry{bindingoffset=0pt}}
+\AddToHook{shipout/before}{\ifnum\ReadonlyShipoutCounter>0 \DiscardShipoutBox\fi}
+\AddToHook{begindocument/end}{%
+    \gdef\thud@universityA{\includegraphics[width=\textwidth]{banners/black/banner_uniud_\languagename.pdf}\\}%
+    \maketitle\enddocument%
+}
+\makeatother
+\input{thesis}

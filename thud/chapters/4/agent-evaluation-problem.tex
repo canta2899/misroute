@@ -1,0 +1,71 @@
+\section{The Agent Evaluation Problem}
+\label{sec:agent-evaluation-problem}
+
+An agent's task-solving process consists of a sequence of states, not a single output, which raises the question of what counts as the right unit of evaluation once the subject is an agent. The classical rational agent, introduced in Section~\ref{subsec:rationality}, offers a starting point for this question. Its behavior is evaluated by a performance measure, external to it and predetermined before it runs \cite[Chap.~2]{russellArtificialIntelligenceModern2022}.
+
+\subsection{Same Outcome, Different Trajectories}
+\label{subsec:quadratic-example}
+
+Scoring the agent's behavior by its effect on the environment, rather than by the behavior itself, is the starting point for the example in Figures~\ref{fig:quadratic-tool} and \ref{fig:quadratic-direct}.
+
+\begin{problembox}
+  Two agents are given the equation $x^2 - 4 = 0$ and asked to report the values of $x$ that satisfy it.
+\end{problembox}
+
+\begin{scenariobox}{Scenario A}
+  The agent calls a math tool, which solves the equation and returns the roots, as shown in Figure~\ref{fig:quadratic-tool}.
+
+  \begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=12mm,
+        every node/.style={font=\small},
+        box/.style={draw, rounded corners, align=center, minimum height=8mm, minimum width=20mm},
+        arr/.style={-{Latex[length=2mm]}}
+        ]
+        \node[align=center, text width=22mm] (query) {Solve the equation\\$x^2-4=0$};
+        \node[box, right=of query] (llm) {LLM};
+        \node[align=center, text width=22mm, right=of llm] (output) {$x=2$, $x=-2$};
+        \node[box, below=8mm of llm] (tool) {math-tool};
+        \draw[arr] (query) -- (llm) node[midway, above] {\scriptsize 1};
+        \draw[arr] ([xshift=-3mm]llm.south) -- ([xshift=-3mm]tool.north) node[midway, left] {\scriptsize 2};
+        \draw[arr] ([xshift=3mm]tool.north) -- ([xshift=3mm]llm.south) node[midway, right] {\scriptsize 3};
+        \draw[arr] (llm) -- (output) node[midway, above] {\scriptsize 4};
+    \end{tikzpicture}
+    \caption[Tool-call trajectory]{Tool-call trajectory.}
+    \label{fig:quadratic-tool}
+  \end{figure}
+\end{scenariobox}
+
+\begin{scenariobox}{Scenario B}
+  The agent produces the roots directly, because the underlying language model has been trained on equations of this form and predicts the result without an intermediate step, as shown in Figure~\ref{fig:quadratic-direct}.
+
+  \begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=12mm,
+        every node/.style={font=\small},
+        box/.style={draw, rounded corners, align=center, minimum height=8mm, minimum width=20mm},
+        unusedbox/.style={draw, dashed, rounded corners, align=center, minimum height=8mm, minimum width=20mm, text=gray, draw=gray},
+        arr/.style={-{Latex[length=2mm]}}
+        ]
+        \node[align=center, text width=22mm] (query) {Solve the equation\\$x^2-4=0$};
+        \node[box, right=of query] (llm) {LLM};
+        \node[align=center, text width=22mm, right=of llm] (output) {$x=2$, $x=-2$};
+        \node[unusedbox, below=8mm of llm] (tool) {math-tool};
+        \draw[arr] (query) -- (llm) node[midway, above] {\scriptsize 1};
+        \draw[arr] (llm) -- (output) node[midway, above] {\scriptsize 2};
+    \end{tikzpicture}
+    \caption[Direct-response trajectory]{Direct-response trajectory.}
+    \label{fig:quadratic-direct}
+  \end{figure}
+\end{scenariobox}
+
+Both scenarios report $x = 2$ and $x = -2$. An outcome-only criterion, applied to the final answer alone, scores them identically, because it has no access to the process that produced the answer and therefore cannot distinguish an answer produced by a tool call from one produced directly by the model. The two trajectories differ, however, in the guarantee they carry beyond this single equation. Scenario A routes equations to the same deterministic solver, so a harder or less common equation is handled by the same computation and solved with the same reliability. Scenario B carries no such guarantee: the model can produce incorrect roots for a harder or less common equation with the same confidence with which it reports the correct ones here.
+
+\subsection{Outcome-Only Evaluation in Coding Benchmarks}
+\label{subsec:coding-benchmarks-outcome-only}
+
+Coding benchmarks that evaluate agents on software engineering tasks do not all treat the trajectory the same way: some score an agent purely by outcome, as in Scenario A and Scenario B above, while others also account for how that outcome was reached, and the choice determines what the benchmark measures. SWE-bench and ViBench, reviewed below, are outcome-only in their primary metric. SWE-bench scores an agent's submission by applying the proposed patch to the repository and running the associated test suite: a task instance is resolved when the patch applies and all tests pass, and the reported metric is the percentage of task instances resolved \cite{jimenezSWEbenchCanLanguage2024a}. This metric excludes the tool calls that the agent makes while producing the patch, their order, and the intermediate observations returned by the repository or the test runner. It reads only the final patch and the pass or fail outcome of the tests.
+
+ViBench, a more recent coding benchmark, sharpens the same separation. Its primary score, Pass@1, credits an artifact only when every test plan associated with it scores full marks, indicating the absence of bugs or missing functionality \cite{zhongViBenchBenchmarkVibe2026a}. A test plan is a natural-language script of browser interactions that a human end user or QA tester would perform. Pass@1 verifies the running application's behavior through this browser automation, evaluated independently of the source code \cite{zhongViBenchBenchmarkVibe2026a}. The agent's tool-use trajectory is not part of this score: it is examined afterward, through what the benchmark calls \emph{trajectory-level} and \emph{qualitative failure-mode} analyses, presented separately from and after the Pass@1 and graded-score results \cite{zhongViBenchBenchmarkVibe2026a}. ViBench names this separation explicitly, treating trajectory analysis as a distinct, secondary step rather than a component folded into the metric. This separation may follow from a constraint on generic benchmark design. Trajectory analysis presupposes access to an agent's internal architecture. Because that architecture differs across the agents a benchmark evaluates, trajectory analysis cannot be standardized into a single metric the way an outcome check on the produced artifact can. This makes explicit the property that SWE-bench's design leaves implicit: the score reads only the outcome the agent produces. The process that produced it is analyzed, when it is analyzed at all, outside the scoring procedure.

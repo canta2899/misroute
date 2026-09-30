@@ -1,0 +1,33 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+*.pt
+
+# Secrets
+.env
+
+.DS_Store
+*.parquet
+.ipynb_checkpoints
+
+# Claude
+.claude/worktrees
+CLAUDE.local.md
+
+pilot/
+data/
+nb/data/cache/
+nb/__marimo__/
+report/report.pdf
+docs/*.pdf
+teaching/
+probing-data/
+# written by `ds export`; the columns are described in dataset/README.md
+dataset/*.meta.json

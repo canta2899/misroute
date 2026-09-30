@@ -1,0 +1,22 @@
+\section{Trajectory-aware Evaluation}
+\label{sec:trajectory-aware-evaluation}
+
+Trajectory-aware evaluation scores the sequence of intermediate steps that an agent takes, its tool calls, plans, and decisions, rather than only the final output, and responds to the gap described in Section~\ref{sec:agent-evaluation-problem}.
+
+The gap is not limited to trajectories that differ in whether a tool is invoked. It appears also between two agents that both use a tool: one agent can solve the equation with a single call to a symbolic math tool, while another can reach the same roots through multiple calls, applying a sequence of algebraic transformations and a general formula for the roots of a polynomial where the single call would have applied the specific formula for a quadratic. Both agents report $x = 2$ and $x = -2$, and an outcome-only criterion scores them identically. The two trajectories differ in the number of tool calls and in the computation that each call carries out, which affects the cost of the run. More generally, the correctness of the output is not sufficient to establish that the process producing it was carried out correctly. That has to be checked at the level of the trajectory itself.
+
+Trajectory-aware evaluation is not a single method. Mohammadi et al.\ organized agent evaluation along two axes \cite{mohammadiEvaluationBenchmarkingLLM2025}:
+
+\begin{itemize}
+    \item \emph{What is evaluated}: outcome-oriented agent behavior, on one side, against process-oriented agent capabilities on the other, such as tool use, planning and reasoning, memory and context retention, and multi-agent collaboration.
+    \item \emph{How the evaluation is carried out}: the interaction mode, the data, the metrics, and the tooling involved.
+\end{itemize}
+
+Within this taxonomy, the metrics and evaluation strategies that fit a given case depend on what is being assessed \cite{mohammadiEvaluationBenchmarkingLLM2025}. AgentBench, $\tau$-bench, and TRAJECT-Bench illustrate this variation with three concrete instances of trajectory-aware evaluation. All three target process-oriented capabilities, but they differ along the second axis of the taxonomy, the interaction mode used to elicit and score the trajectory, so each scores a different aspect of the agent's process:
+
+\begin{itemize}
+    \item \emph{AgentBench} evaluates agents across eight distinct environments, task settings such as an operating system shell, a database, and a knowledge graph, each with its own action space and metric \cite{liuAgentBenchEvaluatingLLMs2025}. The agent interacts with each environment over multiple turns, with the number of rounds ranging from five to thirty-five, so the benchmark assesses reasoning and decision-making across the interaction rather than at a single output.
+    \item \emph{$\tau$-bench} measures an agent's ability to interact with a simulated user and with programmatic APIs while following a domain-specific policy document \cite{yao$t$benchBenchmarkToolAgentUser2024}. Its reward combines two terms: whether the database state, the content of the records the agent's tool calls wrote or changed, matches an annotated target state, and whether the agent's responses to the user adhere to the policy. The score thus depends on how the agent conducted the interaction, not only on the state it left behind.
+    \item \emph{TRAJECT-Bench} reports trajectory-level diagnostics alongside final accuracy, including the correctness of tool selection and of the arguments passed to each tool, and whether dependencies and ordering constraints between steps are satisfied \cite{heTRAJECTBenchTrajectoryAwareBenchmark2025}.
+\end{itemize}
+

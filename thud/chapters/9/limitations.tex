@@ -1,0 +1,34 @@
+\section{Limitations of the Study}
+\label{sec:ch9-limitations-work}
+
+The implications that Section~\ref{sec:ch9-implications} draws from the results of Chapter~\ref{chap:results-analysis} are subject to the limitations stated in this section, which concern the synthetic dataset, the structure of the multi-turn conversations, the scale and composition of the model pool, and the position from which the probe reads the hidden states.
+
+\subsection{Synthetic Dataset}
+\label{subsec:ch9-limitations-dataset}
+
+Every result reported in this work is measured on the single-turn and multi-turn datasets described in Chapter~\ref{chap:dataset-construction}. Both datasets are generated synthetically by prompting a large language model, and each sample is built to meet the requirements stated in Section~\ref{sec:dataset-requirements}. The content and the distribution of the requests are therefore determined by the design of the generation pipeline. Every accuracy in this work is measured on this distribution. The requests that a deployed multi-agent system receives from its users may follow a different distribution. The accuracy gain of the probe over the coordinator in such a system may therefore be larger or smaller than the one measured in Chapter~\ref{chap:results-analysis}.
+
+No human annotation is performed on the datasets. The label of each sample comes from the generation plan, and it is validated only by the automated audit stage. As Section~\ref{subsec:pipeline-audit-repair} describes, this stage applies deterministic structural rules, the Jaccard index on \texttt{adversarial} pairs, and the verdict of an LLM oracle. A manual revision is applied only to the samples that the oracle check flags, so every other sample keeps the label assigned by the plan without human verification. Some of these samples may therefore be mislabeled, which would affect every accuracy reported in Chapter~\ref{chap:results-analysis}.
+
+\subsection{Structure of the Multi-Turn Conversations}
+\label{subsec:ch9-limitations-multiturn}
+
+The generation pipeline builds every multi-turn sample with the same structure. As Section~\ref{subsec:multiturn-derivation} describes, each conversation contains five messages, which alternate between the developer and the coordinator. In the \texttt{adversarial} tier, the two members of a pair share the first four messages, so that they differ only in the final message.
+
+A conversation between a developer and a coordinator may span tens or hundreds of turns. Its topic may change between turns, and messages unrelated to the routing decision may be interleaved with the messages that carry the information needed for routing.
+
+On the multi-turn dataset, the probe loses more accuracy than the coordinator in all seven models, as Section~\ref{subsec:ch8-multi-turn} reports. Because every conversation has the same structure and the same number of turns, this drop is observed only on conversations of this form, and the dataset does not allow an analysis of how the probe behaves on conversations of different lengths and structures. It is therefore unknown whether the probe remains more accurate than the coordinator on such conversations, and whether the disagreement flag can still mark the misroutes of the coordinator.
+
+\subsection{Scale and Composition of the Model Pool}
+\label{subsec:ch9-limitations-scale}
+
+As Section~\ref{sec:model-choice} describes, every model in the pool is an open-weight model with at most 72 billion parameters. The model pool is therefore limited to this parameter count, and the results of this work apply only to models up to this size.
+
+The model pool is also limited in composition, because its models are not distributed evenly across families and sizes. Of the seven models analyzed in Chapter~\ref{chap:results-analysis}, three belong to the Gemma 4 family and two to the Qwen3 family, and all five have at most 26 billion parameters. Llama 3.3 70B and Qwen2.5 72B are the only two models above that size, and each is the only model of its family in the pool. The results are consistent across the four families, but they are derived mostly from models of the Gemma 4 and Qwen3 families, so they do not show whether the accuracy gain of the probe over the coordinator depends on the model family.
+
+\subsection{Probe Input Position}
+\label{subsec:ch9-limitations-extraction}
+
+As Section~\ref{subsec:probe-position-requirements} states, every probe in this work reads the hidden state at the last prompt token. The only exception is GPT-OSS 20B, whose hidden state at the last reasoning token is also probed for comparison in Section~\ref{sec:ch8-gpt-oss}. The last prompt token is chosen because of masked attention: as Section~\ref{subsec:last-token} describes, it is the only position whose hidden state is computed from the entire prompt.
+
+The position from which the hidden states are read may affect the accuracy of a probe. For GPT-OSS 20B, neither the last prompt token nor the last reasoning token gives a probe that improves on the coordinator, so the position must be chosen according to the model architecture. For example, Healy et al. reported that detection accuracy varies with the method used to extract hidden states from a query \cite{healyInternalRepresentationsIndicators2026}. LatentGate is one example of a different choice, because it pools the hidden states over every token of the query instead of reading a single position \cite{ratnakarLatentGateLowLatencySemantic2026}. Since every probe in this work is trained only on the hidden state at the last prompt token, the results do not allow a comparison between different probing positions.

@@ -1,0 +1,51 @@
+\section{The Language Model as Agent Core}
+\label{sec:llm-decision-component}
+
+The approaches described in Section~\ref{sec:classical-agent} share the property summarized in Table~\ref{tab:agent-designs}: the decide step is constructed for each task from rules, models, plans, utility functions, or trained policies, authored or trained by the designer over a closed set of actions and against an explicit specification. In contrast to these approaches, a more recent line of work realizes the decide step with a pretrained large language model, of the kind described in Chapter~\ref{chap:llm}, which serves as the agent's core computation unit \cite{zhaoSurveyLargeLanguage2026}. The resulting systems are referred to here as LLM-based agents. They do not build the decide step for any one task: the task is supplied to the model as input, in natural language, rather than encoded into the decide step in advance. This changes what the designer has to produce, since the desired behavior is stated in the terms in which it is normally known, instead of being translated into rules, models, plans, utility functions, or reward signals. It does not remove the design work, and it raises the separate problem of checking that the desired behavior is the behavior obtained, which Chapter~\ref{chap:evaluating-agents} addresses. Models of this kind have emerged as the decision component of agents \cite{zhaoSurveyLargeLanguage2026}, and the volume of literature on them has grown in recent years \cite{wangSurveyLargeLanguage2024}.
+
+\subsection{The language model as the decide step}
+\label{subsec:new-decide-step}
+
+The instruction-tuned model of Section~\ref{sec:scale-emergence} is a stochastic policy that takes a prompt as input, emits a token sequence as output, and generalizes across tasks without being retrained for each one \cite{ouyangTrainingLanguageModels2022}. Because it is a foundation model adaptable across tasks \cite{bommasaniOpportunitiesRisksFoundation2022}, what varies from one agent to another is the prompt that frames the goal, the external operations the agent is allowed to invoke, and the data retrieved into its context, rather than the model itself. The same model can be used inside a coding agent, a customer-support agent, or a research assistant. Constructing a new agent remains an engineering task, but it modifies the inputs supplied to the model rather than the decide step it implements.
+
+The definition of agents given by Anthropic is representative, as it groups workflows and agents together as agentic systems while drawing an architectural distinction between them \cite{BuildingEffectiveAI}:
+
+\begin{quotebox}
+``Agent'' can be defined in several ways. Some customers define agents as fully autonomous systems that operate independently over extended periods, using various tools to accomplish complex tasks. Others use the term to describe more prescriptive implementations that follow predefined workflows. At Anthropic, we categorize all these variations as \textbf{agentic systems}, but draw an important architectural distinction between \textbf{workflows} and \textbf{agents}:
+\begin{itemize}
+	\item Workflows are systems where LLMs and tools are orchestrated through predefined code paths.
+	\item Agents, on the other hand, are systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.
+\end{itemize}
+\end{quotebox}
+
+This distinction is consistent with the one adopted in Section~\ref{sec:classical-agent}, where an agent is distinguished by controlling how it pursues its goal.
+
+\subsection{Tools and perception}
+\label{subsec:llm-tools-perception}
+
+Realizing the decide step with a large language model also governs the perceive step. Within the context window, all content is treated uniformly as input. A user instruction, a retrieved document, the output of a previous step, and the result returned by a tool all enter the context as text and affect what the model produces next. Percepts reach the model along two routes:
+
+\begin{itemize}
+	\item \textbf{Supplied percepts.} These reach the model without the model taking part in their selection: the user request, an event reported by the environment, or a document placed in the context before the model runs.
+	\item \textbf{Obtained percepts.} These are retrieved by the model itself. Through the function-calling interface of Section~\ref{sec:structured-output}, the model can emit a structured call to a tool instead of a final action, and the result of that call returns to the context as the next percept.
+\end{itemize}
+
+The exchange of a tool call and its returned result recurs across steps, forming the loop described in Section~\ref{subsec:tool-use-react}. In this loop, not every tool call serves the same purpose. Tool calls may be aimed to:
+
+\begin{itemize}
+	\item \textbf{Take actions.} A call issued to change the state of the environment.
+	\item \textbf{Gather information.} A call issued only to obtain information the model lacks, without changing the environment, such as reading a file or querying a document store. This is the information gathering of Section~\ref{subsec:rationality}: an action planned to reduce the model's uncertainty about the environment rather than to change it.
+\end{itemize}
+
+It is this second kind of call that realizes the active perception of Section~\ref{subsec:rationality}. What is available at a given step is therefore in part the result of the model's own earlier choices. Because of that, the perceive, decide, and act steps are not three phases executed once per iteration, but three processes that overlap in time. Issuing a call is a decision. The call is an action when it changes the environment, and an act of perception when it only retrieves information. The result it returns reopens perception, which feeds the next decision in turn. The dependence on prior knowledge described in Section~\ref{subsec:rationality} applies here as well, where expectations assist interpretation but carry the danger of finding what is expected and not detecting what is not \cite{bajcsyActivePerception1988}.
+
+\subsection{Limitations}
+\label{subsec:llm-agent-fit}
+
+LLM-based agents replace the rules, models, plans, utility functions, or reward signals of the classical designs with natural-language instructions, which are easier to define and maintain, but do not carry the same precision or expressiveness: a rule or a reward signal has fixed, unambiguous semantics, while a natural-language instruction can be interpreted differently by the model, or interpreted inconsistently across invocations.
+
+The properties defined in Section~\ref{sec:properties} are also inherited by LLM-based agents, since every step of the perceive-decide-act loop is the output of a model call. The action taken at a step is non-deterministic. The policy the agent is meant to apply, stated as prompt instructions, may not be followed, or only partially followed. As the content supplied to the agent grows, performance may degrade, depending on its length and on the position of the relevant information in it. An agent can also hallucinate information and state it with confidence.
+
+Operating in a loop compounds these properties. Each step's output feeds into the context of later steps, so a non-deterministic choice, an unfollowed instruction, or a hallucination at one step propagates to the steps that follow it \cite{wangSurveyLargeLanguage2024}.
+
+The classical designs provide two guarantees by construction: a fixed action set and an explicit specification of when each action applies. Neither guarantee is available here. The specification is easier to write, and conformance to it is no longer established by construction. Whether the behavior obtained matches the desired behavior has to be determined by observing the system. This is the subject of Chapter~\ref{chap:evaluating-agents}.

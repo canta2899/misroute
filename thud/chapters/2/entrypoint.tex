@@ -1,0 +1,12 @@
+\chapter{Large Language Models}
+\label{chap:llm}
+
+A large language model computes a probability distribution over the next unit of text, given the text read so far, and an output is obtained by selecting from that distribution. This chapter reviews how that computation is defined, the Transformer architecture that carries it out, and the properties that emerge as the architecture is scaled to its current size. The chapter also introduces the hidden states, the internal representations that a single call to the model produces alongside its output. It also reviews how the truthfulness of a statement or the tool a model is about to call can be linearly decoded from these states.
+
+\input{chapters/2/language-modeling.tex}
+\input{chapters/2/transformer.tex}
+\input{chapters/2/scale-emergence.tex}
+\input{chapters/2/structured-output.tex}
+\input{chapters/2/terminology.tex}
+\input{chapters/2/properties.tex}
+\input{chapters/2/hidden-states.tex}

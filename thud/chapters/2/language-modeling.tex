@@ -1,0 +1,31 @@
+\section{Language Modeling}
+\label{sec:language-modeling}
+
+\subsection{The next-token prediction task}
+\label{subsec:next-token}
+
+A language model assigns a probability to a piece of text. The model does not read whole words, but tokens, smaller pieces of text into which words are segmented; Section~\ref{sec:transformer} defines tokenization precisely. The formulation used by every model discussed in this work is predictive: given the part of the text that has already been read, the model assigns a probability to each token that can come next \cite[Chap.~24]{russellArtificialIntelligenceModern2022}, \cite{zhaoSurveyLargeLanguage2026}. Let $x_1, \dots, x_{i-1}$ denote the tokens already read. The model computes the probability of each token it knows being the next one:
+
+\begin{equation}
+    P(x_i \mid x_1, \dots, x_{i-1}).
+\end{equation}
+
+The probability of a complete text of $n$ tokens factorizes into the product of these probabilities:
+
+\begin{equation}
+    \label{eq:factorization}
+    P(x_1, \dots, x_n) = \prod_{i=1}^{n} P(x_i \mid x_1, \dots, x_{i-1}).
+\end{equation}
+
+This factorization is what makes text generation a repeated application of the same prediction \cite[Chap.~24]{russellArtificialIntelligenceModern2022}. The task is long-standing, and the formulation has outlasted several generations of the models that implement it \cite{zhaoSurveyLargeLanguage2026}.
+
+This predictive formulation has two consequences for how the model is used. It produces a distribution and not an answer, so an answer is obtained only by selecting from that distribution. It also reads only the text supplied to it, so everything that has to influence the prediction has to be part of that text. Both properties hold regardless of how the model is built.
+
+\subsection{From counting to learned functions}
+\label{subsec:counting-to-learned}
+
+The conditional probability in Equation~\ref{eq:factorization} can be estimated from a corpus in more than one way. The earliest estimate is a statistical one: n-gram models count occurrences in the corpus and base each prediction on a fixed number of preceding tokens, regardless of how much text precedes them \cite{zhaoSurveyLargeLanguage2026}, \cite[Chap.~24]{russellArtificialIntelligenceModern2022}.
+
+Neural language models replace the counting estimate with a learned function. A recurrent network reads the text one token at a time. To process token $x_i$, it combines that token with the representation produced after token $x_{i-1}$, and produces a new representation as output. This new representation carries information from every earlier token, so the prediction is no longer limited to the fixed number of preceding tokens that an n-gram model uses \cite{zhaoSurveyLargeLanguage2026}, \cite[Chap.~25]{russellArtificialIntelligenceModern2022}. This sequential dependency constrains training: the representation for token $x_i$ cannot be computed before the representation for token $x_{i-1}$ exists, so tokens cannot be processed in parallel, and information relating two distant tokens must pass through every intermediate representation \cite[Chap.~25]{russellArtificialIntelligenceModern2022}, \cite{vaswaniAttentionAllYou2023}.
+
+Vaswani et al. proposed the Transformer, an architecture that removes this sequential dependency. The Transformer relies on attention, a mechanism that connects any two token positions directly, without passing information through the positions between them \cite{vaswaniAttentionAllYou2023}. Because a token's representation no longer depends on the representation of the token before it, every position can be processed in parallel. The Transformer was adopted in place of recurrent networks and underlies all subsequent large language models \cite{zhaoSurveyLargeLanguage2026}. Large pretrained Transformer language models are what the term Large Language Model refers to \cite{zhaoSurveyLargeLanguage2026}, and the rest of this chapter is concerned with them.

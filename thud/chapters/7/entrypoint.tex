@@ -1,0 +1,16 @@
+\chapter{Hidden-State Probing: Setup and Results}
+\label{chap:probing-results}
+
+Chapter~\ref{chap:dataset-construction} confirms that the single-turn and multi-turn datasets are suitable for a probing experiment.
+
+This chapter describes the experimental setup and reports the results obtained on eight open-weight models. Section~\ref{sec:model-choice} describes the eight models first, since the routing task, the hidden-state capture, the layer sweep and the results of the later sections are all defined for each model. Section~\ref{sec:ch7-probing-setup} describes the coordinator's routing task, the hidden-state capture procedure, the layer sweep that trains one probe per layer to find the optimal layer, and the metrics used to compare the probe against the model. Section~\ref{sec:ch7-results} reports the results obtained for each model, on the single-turn and the multi-turn dataset. Section~\ref{sec:ch7-observations} summarizes what these results show, including whether the differences between probe and model are significant.
+
+
+\input{chapters/7/model-choice.tex}
+
+\input{chapters/7/probing-setup.tex}
+
+\input{chapters/7/results.tex}
+
+\clearpage
+\input{chapters/7/observations.tex}

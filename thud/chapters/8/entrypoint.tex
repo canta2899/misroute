@@ -1,0 +1,21 @@
+\chapter{Discussion of the Results}
+\label{chap:results-analysis}
+
+This chapter analyzes the results reported in Chapter~\ref{chap:probing-results} for each of the eight models and both datasets. Section~\ref{sec:ch8-gpt-oss} analyzes the results of GPT-OSS 20B separately, due to its difference from the other models stated in Chapter~\ref{chap:probing-results}, and because, among all the models, it is the only one where the results in Chapter~\ref{chap:probing-results} show a probe that is less accurate than the coordinator. The following sections then analyze the other seven models together.
+
+Section~\ref{sec:ch8-overview} compares the probe against the coordinator, on the whole dataset, across the difficulty tiers and across the two interaction settings, and answers \hyperref[rq:ch8-rq1-intro]{\textbf{RQ1}}. Section~\ref{sec:ch8-failure-analysis} compares the failures of the probe, of the coordinator and of the text-only classifiers, and answers \hyperref[rq:ch8-rq2-intro]{\textbf{RQ2}}. Section~\ref{sec:ch8-depth} reports the relative depth of the optimal layer for the probe, and answers \hyperref[rq:ch8-rq3-intro]{\textbf{RQ3}}. Section~\ref{sec:ch8-error-flag} evaluates the probe as a runtime error flag on the coordinator's decision, and answers \hyperref[rq:ch8-rq4-intro]{\textbf{RQ4}}.
+
+% many floats: let pages end short instead of stretching the text to the bottom
+\raggedbottom
+
+\input{chapters/8/gpt-oss.tex}
+
+\input{chapters/8/overview.tex}
+
+\input{chapters/8/failure-analysis.tex}
+
+\input{chapters/8/depth.tex}
+
+\input{chapters/8/error-flag.tex}
+
+\flushbottom

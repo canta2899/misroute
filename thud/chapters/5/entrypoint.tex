@@ -1,0 +1,18 @@
+\chapter{Research Scope and Requirements}
+\label{chap:motivation}
+
+Chapter~\ref{chap:evaluating-agents} illustrates why evaluating the coordinator's routing decision is hard, particularly when the goal is to catch a wrong decision before the coordinator delegates the request to a sub-agent. Section~\ref{sec:cost-of-attribution} shows that attributing a failure to a specific agent and step by inspecting a completed trace is costly and does not scale when performed by hand. Section~\ref{sec:failure-attribution} shows that automating this attribution with an LLM-as-a-judge is not much more reliable: on the Who\&When benchmark, the best automated method reached 53.5\% accuracy at identifying the responsible agent and 14.2\% accuracy at pinpointing the responsible step, with some methods scoring below random \cite{zhangWhichAgentCauses2025}.
+
+A check that runs at the moment of the coordinator's decision, before the selected sub-agent is invoked, would attribute the failure to the coordinator itself and could prevent the rest of the trace from running. A source for that check could come from probing the hidden states of the coordinator's underlying LLM.
+
+This chapter reviews the literature on hidden-state probing for routing decisions and identifies the gaps it leaves open. The chapter then determines the requirements that guide the rest of this work.
+
+\input{chapters/5/routing-check-designs.tex}
+
+\input{chapters/5/related-work-routing.tex}
+
+\input{chapters/5/rq-derivation.tex}
+
+\input{chapters/5/dataset-requirements.tex}
+
+\input{chapters/5/model-selection-requirements.tex}

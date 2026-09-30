@@ -1,0 +1,35 @@
+\section{Scale, Emergence, and Adaptation}
+\label{sec:scale-emergence}
+
+The mechanism described in Section~\ref{sec:transformer} is the same at every model size. Scale changes the range of tasks the model can be used for, instruction tuning changes the form in which a task is supplied to it, and the interface exposed by the provider changes the form in which the answer is returned.
+
+\subsection{Scale and emergent abilities}
+\label{subsec:scale}
+
+Transformer-based language models have been scaled to progressively larger sizes. Once pretrained models reached on the order of a hundred billion parameters, their behavior diverged from that of smaller predecessors. In 2020, Brown et al. reported that GPT-3 could perform a wide range of tasks given only a natural-language prompt and a few examples, with no gradient updates \cite{brownLanguageModelsAre2020}. A separate line of work has identified \emph{emergent abilities}, capabilities such as multi-step reasoning and multi-digit arithmetic that do not improve smoothly with scale but appear only beyond a certain model size \cite{weiEmergentAbilitiesLarge2022, zhaoSurveyLargeLanguage2026}.
+
+\subsection{Foundation models and adaptation by prompt}
+\label{subsec:foundation-models}
+
+A Large Language Model (or LLM) is an instance of a foundation model: a model trained on broad data, generally through self-supervision at scale, that can be adapted to a wide range of downstream tasks rather than trained for any one of them \cite{bommasaniOpportunitiesRisksFoundation2022}. Bommasani et al. chose the term \emph{foundation} to name this role: the model is itself incomplete, but it serves as the common basis from which many task-specific models are built through adaptation \cite{bommasaniOpportunitiesRisksFoundation2022}. The breadth of the training data reduces the need to encode task-specific information in the model, so one general model can replace many task-specific ones. The model can be adapted to a particular task by supplying a prompt that states the task in natural language, with no retraining \cite{bommasaniOpportunitiesRisksFoundation2022,brownLanguageModelsAre2020}. The task is therefore part of the input, and it occupies token positions of the sequence described in Section~\ref{sec:transformer} like any other content.
+
+\subsection{Frozen models}
+\label{subsec:frozen}
+
+Adaptation by prompt changes no parameter of the model: the weights set during pretraining, and during any later fine-tuning, stay fixed while the model is used \cite{bommasaniOpportunitiesRisksFoundation2022,brownLanguageModelsAre2020}. A model whose parameters receive no gradient update while it is used, whether it is adapted by prompt or simply run as is, is referred to throughout this work as \emph{frozen}.
+
+\subsection{Instruction tuning and the chat format}
+\label{subsec:instruction-tuning}
+
+Instruction following is not a direct result of scale: next-token prediction does not align the output with what a user intends, and larger models can be as untruthful or unhelpful as smaller ones \cite{ouyangTrainingLanguageModels2022}. Instruction tuning addresses this: a pretrained model is fine-tuned on demonstrations of desired behavior and then refined with reinforcement learning from human feedback, producing a system that follows natural-language instructions across many tasks \cite{ouyangTrainingLanguageModels2022, zhaoSurveyLargeLanguage2026}.
+
+Instruction tuning also sets a fixed input format. Instruction-tuned models are queried through a chat format that delineates roles, such as a system instruction, a user message, and previous assistant turns \cite{openaiGptoss120bGptoss20bModel2025}. The prompt processed at inference time is the rendering of these roles into a single token sequence, as Section~\ref{sec:terminology} defines in detail.
+
+\subsection{Chain-of-thought prompting}
+\label{subsec:chain-of-thought}
+
+Adaptation by prompt also covers how the answer is produced, and not only what task is asked. Wei et al. introduced \emph{chain-of-thought} prompting, in which the prompt contains demonstrations that state a series of intermediate reasoning steps before the answer. The model then generates the same kind of steps before its answer to the query \cite{weiChainofThoughtPromptingElicits2023}. They reported that the technique improves performance on arithmetic, commonsense, and symbolic reasoning tasks, and that prompting a 540B-parameter model with eight such demonstrations reaches state-of-the-art accuracy on the GSM8K benchmark of math word problems \cite{weiChainofThoughtPromptingElicits2023}. The gains appear only in sufficiently large models, which places the technique alongside the emergent abilities of Section~\ref{subsec:scale} \cite{weiChainofThoughtPromptingElicits2023, weiEmergentAbilitiesLarge2022}.
+
+The intermediate steps are produced by ordinary token generation: each step is a span of tokens, emitted one at a time in the decode phase of Section~\ref{subsec:prefill-decode}, and each token is appended to the input before the next is predicted. The technique changes the sequence the answer is computed from: it now contains the model's own intermediate output.
+
+Current model families make this behavior part of the model rather than of the prompt. Some expose it as a mode selected at inference time within one model \cite{yangQwen3TechnicalReport2025, teamGemma4Technical2026}, and some are released to produce chain-of-thought output by default \cite{openaiGptoss120bGptoss20bModel2025}.

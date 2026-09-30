@@ -1,0 +1,422 @@
+\chapter{Prompts}
+\label{chap:appendix-prompts}
+
+This appendix reports the prompt templates used by the dataset generation pipeline described in Section~\ref{sec:dataset-overview}, and the coordinator system prompt used in the probing setup of Chapter~\ref{chap:probing-results}.
+
+\section{Sub-Agents and Collisions}
+\label{sec:appendix-taxonomy}
+
+\texttt{\$\{experts\}} and \texttt{\$\{collisions\}} recur across several templates and stay fixed for the whole dataset. \texttt{\$\{experts\}} lists the five sub-agents defined in Section~\ref{sec:dataset-overview} and what each one handles.
+
+\begin{promptverbatim}
+- time_to_market (Time-to-Market): Absolute time-to-market. Accepts hardcoding, skipped abstractions and technical debt to get something demonstrable now.
+- scale_arch (Scalable Architecture): Future concurrency and horizontal growth. Decouples components, removes shared state, designs for many times the current load.
+- resource_opt (Resource Optimization): Hard CPU, memory or cost ceilings. Strips abstractions and takes low-level control to fit inside a fixed budget.
+- legacy_compat (Legacy Compatibility): Strict backward compatibility. Bound by published API contracts, existing clients and outdated dependencies that cannot move.
+- strict_compliance (Strict Compliance): Security, privacy and regulatory standards. Zero-trust data handling, auditability, and rules that cannot be traded away.
+\end{promptverbatim}
+
+\texttt{\$\{collisions\}} lists the ten sub-agent pairs that pull against each other, one per pair of sub-agents, and the tension between them.
+
+\begin{promptverbatim}
+- time_to_market vs scale_arch: get it working today vs. build it for many times this load
+- time_to_market vs resource_opt: the fastest path to build vs. the cheapest path to run
+- time_to_market vs legacy_compat: hack it in now vs. never break an existing contract
+- time_to_market vs strict_compliance: bypass the boundary to ship vs. the boundary is not optional
+- scale_arch vs resource_opt: spread the work across more machines vs. fit it on the machines you pay for
+- scale_arch vs legacy_compat: reshape the topology vs. keep the published interface intact
+- scale_arch vs strict_compliance: move and replicate data freely vs. data may not leave its boundary
+- resource_opt vs legacy_compat: strip the abstraction out vs. the signature must not change
+- resource_opt vs strict_compliance: cut the overhead vs. the overhead is a required control
+- legacy_compat vs strict_compliance: preserve the old behaviour vs. the old behaviour is now disallowed
+\end{promptverbatim}
+
+\section{Fact Generation}
+
+\texttt{\$\{scenario\}} is the seed scenario text; \texttt{\$\{experts\}} is the shared taxonomy listing from Section~\ref{sec:appendix-taxonomy}.
+
+\subsection{System prompt}
+\begin{promptverbatim}
+You describe the operating constraints a software team works under, for a
+research dataset about request routing. Five specialists look at the same
+system and optimise for different constraints:
+
+${experts}
+
+Write plainly and concretely. No code, no markdown, no lists inside a value.
+\end{promptverbatim}
+
+\subsection{User prompt}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Write five requirements on this system, one per specialist, in the order listed
+below. Each is one or two sentences, phrased as an operational fact about this
+team's situation, and each must name the party that imposes it (a named role,
+team, customer, body or budget owner) and say what they require.
+
+${experts}
+
+All five must be simultaneously plausible for the same team on the same system:
+a reader should accept that every one of them is true, and that the only open
+question is which one that team is actually being held to right now.
+
+All five must also carry the same enforcement weight. Each one has a real owner
+who can insist on it, and each one is the kind of thing that owner could also
+sign off on relaxing for a while. Do not write some of them as laws and others
+as ambitions: no requirement may read as inherently more non-negotiable than
+the others. Do not use the specialist ids or names, and do not describe the
+requirements as competing.
+\end{promptverbatim}
+
+\section{Resolution Rule}
+\label{sec:appendix-resolution-rule}
+
+\texttt{\$\{resolution\_rule\}} states the rule defined in Section~\ref{sec:dataset-overview} that decides which sub-agent is correct.
+
+\begin{promptverbatim}
+Exactly one requirement in the text is BINDING: someone with authority over this
+team - their org, a customer, a regulator, a budget owner - is holding them to it
+right now, and it is not open for discussion. The correct expert is the one that
+owns that requirement.
+
+Every other requirement has been WAIVED: whoever owns it has explicitly relieved
+this team of it for the moment - signed off on the current behaviour, granted an
+exception, accepted the tradeoff, moved it to a later milestone. A waived
+requirement can still be serious, can still be what the developer cares about
+most, and can still take up most of the message.
+\end{promptverbatim}
+
+\section{Query Generation}
+\label{sec:appendix-query-generation}
+
+\subsection{System prompt}
+
+\begin{promptverbatim}
+You write realistic developer messages for a research dataset about request
+routing. Each message goes to a coordinator that must forward it to exactly one
+of five specialists. The specialists are not topic areas: they all look at the
+same code and optimise for different systemic constraints.
+
+## The specialists
+${experts}
+
+## Pairs that pull against each other
+${collisions}
+
+## How the correct specialist is decided
+${resolution_rule}
+
+## Unbreakable rules
+1. Prose only: no code, backticks, markdown, lists, headings, logs, stack
+   traces, pseudo-code, or emphasis markers.
+2. Never name the experts or their ids, and never use the words "expert",
+   "route", "constraint", "mandate", "preference". The developer describes
+   their situation, they do not classify it.
+3. Exactly one expert must be correct for the message.
+4. Give every constraint the same space, specificity and urgency; only the
+   resolution rule above may separate them.
+5. The developer speaks in their own words about their own system: no neutral
+   summary, no phrasing lifted from the notes you are given.
+6. The developer words the letting-go of a requirement in their own idiom,
+   never in the wording these instructions use for it: "signed off", "granted
+   an exception" and "waived" and "green light" must not appear in the text. Teams
+   say it in many ways: fine with it for now, off our plate this quarter,
+   nobody is chasing us on it any more, that ship has sailed until the review.
+\end{promptverbatim}
+
+\subsection{Single-Turn Query Generation}
+\label{sec:appendix-single-turn}
+
+\texttt{\$\{persona\}} names the voice the message is written in, \texttt{\$\{fact\_gold\}} is the binding requirement, \texttt{\$\{fact\_decoy\}} is the waived requirement in the natural tier, \texttt{\$\{fact\_north\}} and \texttt{\$\{fact\_south\}} are the two requirements of an adversarial pair, \texttt{\$\{tension\}} names the collision between two requirements, and \texttt{\$\{pattern\}} names the decoy pattern defined in Section~\ref{subsec:difficulty-tiers}.
+
+\subsubsection{Plain tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Voice: ${persona}
+
+Requirement this developer is being held to right now:
+${fact_gold}
+
+Write one message from this developer asking for help with this system. Only
+this one requirement is in play; do not introduce any other pressure. The
+requirement is live and current: something they are held to as they write,
+never something that shaped a past decision. Three to six sentences.
+\end{promptverbatim}
+
+\subsubsection{Natural tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Voice: ${persona}
+
+Requirement this developer is being held to right now:
+${fact_gold}
+
+Requirement that has been waived: the party named in it has explicitly relieved
+the team of it for the time being: signed off on the current behaviour,
+granted an exception, or moved it to a later milestone. The developer may still
+care about it a great deal.
+${fact_decoy}
+
+These two pull against each other: ${tension}.
+
+Write one message from this developer asking for help. Both requirements must
+be visible and given comparable space, and the text must say plainly, in the
+developer's own words, that the second one has been waived and by whom. State
+the live requirement as an ordinary fact of their situation, not as an
+emphasised demand. The waived requirement keeps none of its binding force:
+no hard ceiling, no date that still stands, no owner who will not budge.
+Four to eight sentences.
+\end{promptverbatim}
+
+\subsubsection{Adversarial tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Requirement NORTH:
+${fact_north}
+
+Requirement SOUTH:
+${fact_south}
+
+These pull against each other: ${tension}.
+
+Shape of the message: ${pattern}
+
+Voice: ${persona}
+
+Write two versions of one developer message, four to eight sentences, describing
+the situation in the shape above with both requirements in play. They are the
+same text word for word, closing question included. Exactly one clause differs:
+a short offhand aside saying one requirement's owner has let it go for now:
+signed off, granted an exception, pushed it to a later milestone. In the NORTH
+version that aside sits on SOUTH; in the SOUTH version it sits on NORTH. Cover
+the aside and the two are indistinguishable.
+
+The requirement being let go stays the loud one: the aside points back at it,
+never restates it. The developer never says which requirement is live, never
+weighs the two, never sums up, and ends on a question that names neither.
+\end{promptverbatim}
+
+\subsection{Multi-Turn Conversation Generation}
+
+\subsubsection{Plain tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Voice: ${persona}
+
+Requirement this developer is being held to right now:
+${fact_gold}
+
+Write a troubleshooting conversation about this system in which only this
+requirement is in play, and it is live throughout: something they are held to
+as they write, never something that shaped a past decision.
+
+Assistant turns are short working replies: a clarifying question or a partial
+suggestion, never classifying the request and never resolving it.
+\end{promptverbatim}
+
+\subsubsection{Natural tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Voice: ${persona}
+
+Requirement this developer is being held to right now:
+${fact_gold}
+
+Requirement that has been waived: the party named in it has explicitly relieved
+the team of it for the time being: signed off on the current behaviour,
+granted an exception, or moved it to a later milestone. The developer may still
+care about it a great deal.
+${fact_decoy}
+
+These two pull against each other: ${tension}.
+
+Write a troubleshooting conversation in which the session drifts around both of
+these. The final developer turn is what settles it: it says plainly, in their
+own words, which party has waived their requirement, leaving the other one as
+what the team is actually held to.
+
+Assistant turns are short working replies: a clarifying question or a partial
+suggestion, never classifying the request and never resolving it.
+\end{promptverbatim}
+
+\subsubsection{Adversarial tier}
+\begin{promptverbatim}
+System under discussion:
+${scenario}
+
+Requirement NORTH:
+${fact_north}
+
+Requirement SOUTH:
+${fact_south}
+
+These pull against each other: ${tension}.
+
+Shape of the session: ${pattern}
+
+Voice: ${persona}
+
+A troubleshooting conversation whose shared opening raises both requirements and
+settles neither; if anything it drifts toward the wrong one. Assistant turns
+are short working replies: a clarifying question or a partial suggestion, never
+resolving anything and never asking whether a requirement still matters. Nobody
+lets go of a requirement in the shared turns; the only release anywhere is the
+aside in the final turn.
+
+The final developer turn forks in two: one turn, four to eight sentences, in two
+versions that are the same text word for word, closing question included. The
+only difference is a short offhand aside saying one requirement's owner has let
+it go for now: signed off, granted an exception, pushed it to a later
+milestone. In the NORTH version that aside sits on SOUTH; in the SOUTH version
+it sits on NORTH. Cover the aside and the two are indistinguishable.
+
+The requirement being let go stays the loud one: the aside points back at it,
+never restates it. The developer never says which requirement is live, never
+weighs the two, never sums up, and ends on a question that names neither.
+\end{promptverbatim}
+
+\section{Oracle Audit}
+
+\subsection{System prompt}
+\begin{promptverbatim}
+You are the reference annotator for a request-routing dataset. You read a
+developer request and decide which single specialist it belongs to.
+
+## The specialists
+${experts}
+
+## Pairs that pull against each other
+${collisions}
+
+## How to decide
+${resolution_rule}
+
+Work from the text only. Ignore how much space each concern is given, how
+confident the developer sounds, and any fix they propose themselves.
+
+Do not carry in assumptions about which kinds of requirement are usually
+serious. Regulations, signed contracts, published API guarantees and hard
+budget ceilings are waivable like anything else, and in these texts they often
+are: if the developer says the party behind one has signed off, granted an
+exception or deferred it, that requirement is waived and its specialist is the
+wrong answer, however weighty it sounds. Equally, a deadline or a growth
+projection is fully binding when someone is holding the team to it.
+
+Quote the exact words that show the requirement you chose is the live one. Set
+decidable to false if nothing in the text is held over the team, if two things
+are and neither is waived, or if the waiver is only implied.
+\end{promptverbatim}
+
+\subsection{User prompt}
+
+\texttt{\$\{text\}} is the rendered sample being audited.
+
+\begin{promptverbatim}
+Developer request:
+
+${text}
+\end{promptverbatim}
+
+\section{Coordinator}
+\label{sec:appendix-coordinator-prompt}
+
+The system prompt below is used in the probing setup of Chapter~\ref{chap:probing-results}, shared by all eight models. \texttt{\$\{collisions\}} is the same shared taxonomy listing from Section~\ref{sec:appendix-taxonomy}.
+
+\begin{promptverbatim}
+You are a coordinator that routes an incoming developer request to exactly
+one specialist expert. Read the request, decide which single expert should
+handle it, and route it by calling that expert's tool exactly once. The
+experts are not topic areas: they look at the same system and optimise for
+different constraints, so route on which constraint the developer is
+actually held to, not on which one they talk about most.
+
+Pairs that pull against each other:
+${collisions}
+\end{promptverbatim}
+
+\section{Sub-Agent Tool Definitions}
+\label{sec:appendix-subagent-tools}
+
+Section~\ref{sec:ch7-probing-setup} states that each sub-agent is declared to the coordinator as a function-calling tool, following the schema of Section~\ref{sec:structured-output}. Below are the five tool definitions, one per sub-agent, exactly as each is rendered into the prompt alongside the system prompt of Section~\ref{sec:appendix-coordinator-prompt}. The \texttt{name} field is the sub-agent's identifier, and the \texttt{description} field states its role, what it handles, and an example request that routes to it. The \texttt{parameters} field defines an empty argument schema: the coordinator names a tool by calling it, and supplies no further argument.
+
+\begin{promptverbatim}
+{
+  "type": "function",
+  "function": {
+    "name": "time_to_market",
+    "description": "Time-to-Market expert. Handles: Absolute time-to-market. Accepts hardcoding, skipped abstractions and technical debt to get something demonstrable now.. Example request that routes here: \"we're demoing the ingest flow to the buyer on thursday and the deal is contingent on it running end to end. i'd rather wire the mapping properly but that can wait.\"",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+\end{promptverbatim}
+
+\begin{promptverbatim}
+{
+  "type": "function",
+  "function": {
+    "name": "scale_arch",
+    "description": "Scalable Architecture expert. Handles: Future concurrency and horizontal growth. Decouples components, removes shared state, designs for many times the current load.. Example request that routes here: \"product has committed us to onboarding the three biggest tenants next quarter, which is roughly twenty times the events we take now. our worker pulls from one queue and holds a db connection open the whole time.\"",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+\end{promptverbatim}
+
+\begin{promptverbatim}
+{
+  "type": "function",
+  "function": {
+    "name": "resource_opt",
+    "description": "Resource Optimization expert. Handles: Hard CPU, memory or cost ceilings. Strips abstractions and takes low-level control to fit inside a fixed budget.. Example request that routes here: \"finance capped our per-node spend and we can't move off the 2gb instances until next fiscal year. the parser copies every frame into a fresh buffer before decoding it.\"",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+\end{promptverbatim}
+
+\begin{promptverbatim}
+{
+  "type": "function",
+  "function": {
+    "name": "legacy_compat",
+    "description": "Legacy Compatibility expert. Handles: Strict backward compatibility. Bound by published API contracts, existing clients and outdated dependencies that cannot move.. Example request that routes here: \"two external customers still call the v1 export endpoint and their contracts say we can't change its response shape for another year. i want to rework what happens behind it.\"",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+\end{promptverbatim}
+
+\begin{promptverbatim}
+{
+  "type": "function",
+  "function": {
+    "name": "strict_compliance",
+    "description": "Strict Compliance expert. Handles: Security, privacy and regulatory standards. Zero-trust data handling, auditability, and rules that cannot be traded away.. Example request that routes here: \"our dpo signed off on a retention policy that says raw uploads never leave the audited bucket. right now the fine-tuning job reads straight from it by filename prefix.\"",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+}
+\end{promptverbatim}

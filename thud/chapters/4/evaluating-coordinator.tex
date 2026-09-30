@@ -1,0 +1,11 @@
+\section{Evaluating the Coordinator}
+\label{sec:evaluating-coordinator}
+
+The coordinator pattern of Section~\ref{sec:coordinator} fits the terms this chapter has built. The routing decision is a trajectory-level property in the sense of Section~\ref{sec:trajectory-aware-evaluation}: every sub-agent downstream of the coordinator acts on it, so a wrong routing decision is not repaired by anything that runs after it, regardless of how correctly that later step is carried out. The correctness of a run that involves a coordinator therefore cannot be read off the final output alone; it depends on whether the routing step itself was correct.
+
+This also makes the routing decision an attribution target in the sense of Section~\ref{sec:failure-attribution}. Establishing that a run failed because of routing, rather than because of a later step, requires the same kind of attribution discussed there, with the same two limits: a judge cannot reliably confirm that a routing decision was wrong, and confirming it through replay requires the run to already be complete.
+
+The offline and online regimes of Section~\ref{sec:offline-online-evaluation} both apply to the routing decision. Offline, routing decisions can be checked against a predetermined suite of requests with a known correct sub-agent. Online, a check on the routing decision offers a case of the early exit described in Section~\ref{sec:early-exit-feedback-loop}: a misrouting caught as the decision is made allows the run to be halted before any sub-agent acts on it, rather than allowing the run to complete on a request that was handed to the wrong sub-agent.
+
+The experimental part of this work takes up the coordinator's routing decision under this framing.
+

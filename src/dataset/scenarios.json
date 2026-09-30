@@ -1,0 +1,152 @@
+[
+  {
+    "id": "scn_01",
+    "domain": "data",
+    "text": "A nightly batch job reads customer orders from a transactional database, joins them against a shipping table, and writes a denormalised reporting table. It currently loads every row into a single process before writing anything."
+  },
+  {
+    "id": "scn_02",
+    "domain": "data",
+    "text": "An event ingestion service accepts webhooks from payment providers and appends each payload verbatim to an append-only store, then a downstream worker parses them into typed records."
+  },
+  {
+    "id": "scn_03",
+    "domain": "data",
+    "text": "A deduplication step keeps an in-memory set of every record hash seen during the current run so it can drop repeats before they reach the warehouse."
+  },
+  {
+    "id": "scn_04",
+    "domain": "data",
+    "text": "A reporting API answers dashboard queries by scanning a wide table of raw events on every request, with no materialised aggregates in between."
+  },
+  {
+    "id": "scn_05",
+    "domain": "data",
+    "text": "A change-data-capture pipeline streams row updates from a primary database into a search index, replaying the last few hours of changes whenever a consumer restarts."
+  },
+  {
+    "id": "scn_06",
+    "domain": "data",
+    "text": "A data export feature lets analysts pull a full table dump to their laptop as a single file, generated on demand by the application server."
+  },
+  {
+    "id": "scn_07",
+    "domain": "infra",
+    "text": "A background worker fleet pulls jobs from a single shared queue, and each worker holds an open connection to the primary database for the lifetime of the process."
+  },
+  {
+    "id": "scn_08",
+    "domain": "infra",
+    "text": "Deployment ships one container image that runs the web front end, the scheduler and the job workers, selected by an environment variable at start-up."
+  },
+  {
+    "id": "scn_09",
+    "domain": "infra",
+    "text": "Service-to-service calls inside the cluster go over plain HTTP on an internal network, with a shared static token checked by the receiving service."
+  },
+  {
+    "id": "scn_10",
+    "domain": "infra",
+    "text": "Application logs are written to local disk on each node and shipped once an hour by a sidecar that batches them into an object store."
+  },
+  {
+    "id": "scn_11",
+    "domain": "infra",
+    "text": "A caching layer sits in front of the user profile service, keyed by user id, holding entries in the process memory of each application instance."
+  },
+  {
+    "id": "scn_12",
+    "domain": "infra",
+    "text": "Scheduled maintenance tasks run from a single cron host that holds credentials for every environment and executes shell scripts checked into the application repository."
+  },
+  {
+    "id": "scn_13",
+    "domain": "frontend",
+    "text": "A dashboard page fetches the full account object on mount, keeps it in a global store, and re-renders every widget whenever any field of it changes."
+  },
+  {
+    "id": "scn_14",
+    "domain": "frontend",
+    "text": "A file upload widget reads the selected file entirely into browser memory to compute a checksum and preview it before sending it to the server."
+  },
+  {
+    "id": "scn_15",
+    "domain": "frontend",
+    "text": "The web client stores the session token and a cached copy of the last viewed customer record in browser local storage so reloads feel instant."
+  },
+  {
+    "id": "scn_16",
+    "domain": "frontend",
+    "text": "A shared component library is consumed by three internal applications, and its exported components take a single loosely typed configuration object as their only prop."
+  },
+  {
+    "id": "scn_17",
+    "domain": "frontend",
+    "text": "A live activity feed opens a long-lived connection per browser tab and pushes every event in the workspace to the client, which filters them locally."
+  },
+  {
+    "id": "scn_18",
+    "domain": "frontend",
+    "text": "Form validation rules are duplicated in the browser and in the server handler, and the two copies are kept in step by hand whenever a field changes."
+  },
+  {
+    "id": "scn_19",
+    "domain": "lowlevel",
+    "text": "A parser for a binary telemetry format allocates a fresh buffer for every incoming frame and copies the payload out before handing it to the decoder."
+  },
+  {
+    "id": "scn_20",
+    "domain": "lowlevel",
+    "text": "An embedded gateway process keeps a fixed-size ring buffer of recent sensor readings and flushes it to the network when it fills or a timer fires."
+  },
+  {
+    "id": "scn_21",
+    "domain": "lowlevel",
+    "text": "A library exposes a synchronous read function that blocks the calling thread, and internally spawns a helper thread per outstanding request."
+  },
+  {
+    "id": "scn_22",
+    "domain": "lowlevel",
+    "text": "An image processing routine converts every uploaded picture to a full-resolution intermediate representation in memory before applying any transformation."
+  },
+  {
+    "id": "scn_23",
+    "domain": "lowlevel",
+    "text": "A custom serialisation format writes field names as strings alongside every value, and both the writer and several external consumers depend on that exact layout."
+  },
+  {
+    "id": "scn_24",
+    "domain": "lowlevel",
+    "text": "A connection pool implementation hands out sockets round-robin and keeps a mutex over the entire pool for the duration of each checkout."
+  },
+  {
+    "id": "scn_25",
+    "domain": "ai",
+    "text": "A retrieval service embeds every user document at upload time and keeps all vectors in a single in-process index rebuilt from scratch on each deploy."
+  },
+  {
+    "id": "scn_26",
+    "domain": "ai",
+    "text": "A model inference endpoint loads the full weights into memory at start-up and serves one request at a time per replica, with no request batching."
+  },
+  {
+    "id": "scn_27",
+    "domain": "ai",
+    "text": "A prompt assembly step pastes the user's recent support tickets verbatim into the context window before sending the request to a hosted model provider."
+  },
+  {
+    "id": "scn_28",
+    "domain": "ai",
+    "text": "An evaluation harness replays a fixed set of recorded production conversations against a candidate model and stores every generated response for later review."
+  },
+  {
+    "id": "scn_29",
+    "domain": "ai",
+    "text": "A feature store computes user-level aggregates on demand inside the recommendation request path, reading raw interaction rows for each scored candidate."
+  },
+  {
+    "id": "scn_30",
+    "domain": "ai",
+    "text": "A fine-tuning job pulls its training set from the same object store bucket that holds raw customer uploads, filtered by a filename prefix convention."
+  }
+]

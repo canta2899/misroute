@@ -1,0 +1,104 @@
+\section{Defining the Prompt}
+\label{sec:terminology}
+
+Section~\ref{subsec:instruction-tuning} introduces the \emph{prompt} as the rendering of chat-format roles into one token sequence, together with other information such as function call definitions. However, the term prompt is also commonly used to name the request submitted to a model. This work distinguishes between the two senses, since the rest of it does not use them interchangeably.
+
+\subsection{Query, turn, system prompt, and prompt}
+\label{subsec:query-prompt}
+
+The terms \emph{query}, \emph{input}, or \emph{request} name the text a user submits to a large language model. The \emph{response} is the sequence of tokens the model generates after a given request. Together, a request and its response form one \emph{turn} of a conversation. The model may also be invoked with a \emph{system prompt}, an instruction that states the model's role and the behavior it must follow, and is placed before the user turns in the rendered sequence \cite{openaiGptoss120bGptoss20bModel2025}. Finally, function calling declarations like the ones described in Section~\ref{sec:structured-output} (also known as \emph{tool definitions}) can be part of the information supplied to the model. Altogether, this information forms a single prompt, the actual content submitted to the model.
+
+\begin{table}[htbp]
+\centering
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.27\textwidth}X@{}}
+\toprule
+\textbf{Term} & \textbf{What it names} \\
+\midrule
+\emph{query}, \emph{input}, or \emph{request} & one message a user submits to obtain a response \\[4pt]
+\emph{response} & the text the model generates in response to a request \\[4pt]
+\emph{turn} & a request together with the response it receives \\[4pt]
+\emph{system prompt} & an instruction that states the model's role and the behavior it must follow, supplied by the application rather than by the user, and placed before the user turns in the rendered sequence \cite{openaiGptoss120bGptoss20bModel2025} \\[4pt]
+\emph{prompt} & the full token sequence a model reads: the system prompt and every turn of the conversation so far, rendered together, plus any declared functions when function calling is enabled (Section~\ref{sec:structured-output}) \\
+\bottomrule
+\end{tabularx}
+\caption[Terms for a query and its surrounding prompt]{The terms this work uses for a query and for the prompt built around it.}
+\label{tab:terminology}
+\end{table}
+
+
+\subsection{A rendered example}
+\label{subsec:rendered-example}
+
+The rendering of the prompt is defined by a separate chat template. Figure~\ref{fig:rendered-example} shows how Qwen3-4B-Instruct \cite{yangQwen3TechnicalReport2025} renders this template when the query ``Are you able to research online?'' is submitted to a model, together with a specific system prompt and a tool definition that allows the model to request a web search.
+
+\begin{figure}[htbp]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{X}
+\toprule
+\texttt{<|im\_start|>system} \\
+\texttt{You are a helpful assistant. You can search online if you need current information.} \\
+\texttt{\# Tools} \\
+\texttt{You may call one or more functions to assist with the user query. You are} \\
+\texttt{provided with function signatures within <tools></tools> XML tags:} \\
+\texttt{<tools>} \\
+\texttt{\{"type": "function", "function": \{"name": "web\_search", "description":} \\
+\texttt{"Search the web for a query and return matching results.", "parameters":} \\
+\texttt{\{"type": "object", "properties": \{"query": \{"type": "string", "description":} \\
+\texttt{"The search query."\}\}, "required": ["query"]\}\}\}} \\
+\texttt{</tools>} \\
+\texttt{For each function call, return a json object with function name and arguments} \\
+\texttt{within <tool\_call></tool\_call> XML tags:} \\
+\texttt{<tool\_call>} \\
+\texttt{\{"name": <function-name>, "arguments": <args-json-object>\}} \\
+\texttt{</tool\_call><|im\_end|>} \\
+\texttt{<|im\_start|>user} \\
+\texttt{Are you able to research online?<|im\_end|>} \\
+\texttt{<|im\_start|>assistant} \\
+\bottomrule
+\end{tabularx}
+\caption[Full prompt rendered with the Qwen3-4B-Instruct chat template]{A full prompt rendered using the Qwen3-4B-Instruct chat template.}
+\label{fig:rendered-example}
+\end{figure}
+
+The rendered sequence ends right after the \texttt{assistant} role tag, with no content after it. This is the point where generation starts, and it corresponds to the last prompt token discussed in Section~\ref{subsec:last-token}.
+
+Each call to the model is stateless: nothing from a prior call is retained, so any content the model must read again is included in any subsequent prompt.
+
+Suppose the model answers the request of Figure~\ref{fig:rendered-example} with ``Yes, I can search the web if the question needs current information.'', completing the first turn, and the user then asks ``What is the weather in London today?''. Figure~\ref{fig:rendered-example-2} shows the prompt for this second call. The system prompt and the tool declaration are unchanged from Figure~\ref{fig:rendered-example} and are rendered again in full. What is added is the first turn and the new request.
+
+\begin{figure}[htbp]
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{X}
+\toprule
+\texttt{<|im\_start|>system} \\
+\texttt{You are a helpful assistant. You can search online if you need current information.} \\
+\texttt{\# Tools} \\
+\texttt{You may call one or more functions to assist with the user query. You are} \\
+\texttt{provided with function signatures within <tools></tools> XML tags:} \\
+\texttt{<tools>} \\
+\texttt{\{"type": "function", "function": \{"name": "web\_search", "description":} \\
+\texttt{"Search the web for a query and return matching results.", "parameters":} \\
+\texttt{\{"type": "object", "properties": \{"query": \{"type": "string", "description":} \\
+\texttt{"The search query."\}\}, "required": ["query"]\}\}\}} \\
+\texttt{</tools>} \\
+\texttt{For each function call, return a json object with function name and arguments} \\
+\texttt{within <tool\_call></tool\_call> XML tags:} \\
+\texttt{<tool\_call>} \\
+\texttt{\{"name": <function-name>, "arguments": <args-json-object>\}} \\
+\texttt{</tool\_call><|im\_end|>} \\
+\texttt{<|im\_start|>user} \\
+\texttt{Are you able to research online?<|im\_end|>} \\
+\texttt{<|im\_start|>assistant} \\
+\texttt{Yes, I can search the web if the question needs current information.<|im\_end|>} \\
+\texttt{<|im\_start|>user} \\
+\texttt{What is the weather in London today?<|im\_end|>} \\
+\texttt{<|im\_start|>assistant} \\
+\bottomrule
+\end{tabularx}
+\caption[Next-call prompt rendered with Qwen3-4B-Instruct chat template]{The prompt for the next call in the same conversation, rendered using the Qwen3-4B-Instruct chat template.}
+\label{fig:rendered-example-2}
+\end{figure}
+
+The whole conversation, not only the new request, is resent at every call. An LLM can therefore handle conversations despite being completely stateless.

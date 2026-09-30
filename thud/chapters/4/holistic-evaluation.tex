@@ -1,0 +1,37 @@
+\section{Holistic Evaluation}
+\label{sec:holistic-evaluation}
+
+An open-ended or free-form generation task has no predetermined answer to compare its output against, so neither a predetermined-answer benchmark (Section~\ref{sec:benchmarks-capability-exams}) nor reference-based text matching (Section~\ref{sec:text-matching}) applies to it. The same limit applies to retrieval-augmented generation (RAG). RAG systems are commonly evaluated as extractive question answering, against datasets built around short extractive answers, but this does not represent how a RAG system is actually used, since it generates a synthesized answer rather than returning a predetermined span from the retrieved text \cite{esRagasAutomatedEvaluation2025}. As with open-ended generation, the output cannot be checked against a predetermined reference, so a different evaluation approach is needed.
+
+The Holistic Evaluation of Language Models (HELM) responds to this by evaluating a model along several dimensions at once, rather than reducing it to a single score \cite{liangHolisticEvaluationLanguage2023}. Table~\ref{tab:helm-metrics} lists the seven metrics that HELM records for each scenario, with the property that each one measures \cite{liangHolisticEvaluationLanguage2023}.
+
+\begin{table}[ht]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{0.85\textwidth}{@{}>{\raggedright\arraybackslash}p{2.2cm}X@{}}
+        \toprule
+        Metric & What it measures \\
+        \midrule
+        Accuracy & Task-specific correctness of the output, such as exact match or the F1-score against the expected response. \\
+        Calibration & How closely the model's predicted confidence matches its actual rate of being correct. \\
+        Robustness & Worst-case accuracy under small, meaning-preserving input perturbations, such as typos or paraphrases. \\
+        Fairness & Disparity in accuracy across social groups, measured through counterfactual perturbations of group-related terms. \\
+        Bias & Asymmetry in the language a model generates, such as skewed demographic representation or stereotyped associations. \\
+        Toxicity & Rate of offensive, hateful, or otherwise harmful content in model generations, detected by an automated classifier. \\
+        Efficiency & Computational cost of training and inference, including energy use, carbon emissions, and runtime. \\
+        \bottomrule
+    \end{tabularx}
+    \caption[The seven metrics that HELM records for each scenario]{The seven metrics that HELM records for each scenario \cite{liangHolisticEvaluationLanguage2023}.}
+    \label{tab:helm-metrics}
+\end{table}
+
+Holistic evaluation is defined around three elements, each instantiated concretely in HELM's own design \cite{liangHolisticEvaluationLanguage2023}:
+
+\begin{itemize}
+    \item \emph{Broad coverage.} A wide range of scenarios is included, while what is left out is explicitly acknowledged. A scenario is a triple of task, domain, and language that determines a concrete use case to evaluate against, for example summarization of news articles in English \cite{liangHolisticEvaluationLanguage2023}. HELM realizes broad coverage by defining a taxonomy of scenarios and metrics, narrowed down to a core set of 16 scenarios.
+    \item \emph{Multi-metric measurement.} Several metrics are measured for each scenario, rather than one. HELM records all 7 metrics from Table~\ref{tab:helm-metrics} for each of the 16 core scenarios, so that metrics other than accuracy are not left out of the evaluation.
+    \item \emph{Standardization.} HELM adapts every model to each of the 16 core scenarios through the same few-shot prompts.
+\end{itemize}
+
+HELM adds a fourth, separate design choice on top of the core scenario and metric grid: \emph{targeted evaluations}, additional scenarios that isolate one skill or risk at a time, covering linguistic understanding, world and commonsense knowledge, reasoning, memorization and copyright, disinformation generation, bias, and toxicity generation \cite{liangHolisticEvaluationLanguage2023}.
+

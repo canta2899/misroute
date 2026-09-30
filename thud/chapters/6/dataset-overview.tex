@@ -1,0 +1,213 @@
+\section{Sub-Agent Taxonomy and Sample Design}
+\label{sec:dataset-overview}
+
+Both the single-turn and the multi-turn dataset share the same taxonomy and are built around the same rationale. The only difference is that, in the multi-turn dataset, requests are composed of more than one turn.
+
+In each of the two datasets, every request is chosen to describe a technical scenario in software engineering where a developer asks for guidance on a software system under construction or maintenance. Each request therefore belongs to the same domain and uses similar vocabulary, which responds to the requirement, stated in Section~\ref{subsec:lexical-separability}, that the dataset must be difficult for text-only classifiers. Requests from different domains would make lexical overlap harder to achieve, because the vocabulary would clearly separate the sub-agents: a request about a database migration and a request about a marketing campaign would share little vocabulary regardless of which sub-agent is correct, so their lexical overlap would be minimal and each request would be easily routable.
+
+Software engineering is chosen, among other topics, because the author's familiarity with the domain makes manual review of the requests possible.
+
+\subsection{Constraints}
+\label{subsec:constraints-binding-waived}
+
+Each request may express one or more \textbf{constraints}: technical demands that the software system under construction must satisfy, and constraints can conflict with each other. Each constraint is \textbf{owned} by exactly one of the available sub-agents: the constraint states a demand that falls within that sub-agent's concern.
+
+An \textbf{authority figure}, a role named in the request such as a manager, a customer, or a regulator, determines the status of each constraint:
+
+\begin{itemize}
+    \item A constraint is \textbf{binding} when an authority figure imposes it. A binding constraint determines the correct sub-agent.
+    \item A constraint is \textbf{waived} when an authority figure defers it, for example by moving it to a later milestone. A waived constraint remains part of the request, but it does not determine the correct sub-agent.
+\end{itemize}
+
+Exactly one constraint in a request is binding, and every other constraint it expresses is waived. The correct sub-agent is the sub-agent that owns the binding constraint. The sub-agent that owns a waived constraint is called the \textbf{decoy}. Section~\ref{subsec:constraints-example} gives an example of a request that expresses a binding and a waived constraint.
+
+\subsection{Taxonomy}
+\label{subsec:sub-agent-taxonomy}
+
+Five sub-agents are used across the single-turn and the multi-turn dataset, within the range required in Section~\ref{subsec:routing-setup}. Table~\ref{tab:sub-agent-taxonomy} lists the five sub-agents and the concern each one owns. A request's correct sub-agent is the one pointed to by its binding constraint. Each sub-agent's name is followed by the identifier used to refer to it for the rest of this chapter.
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\tabularxcolumn}[1]{m{#1}}
+    \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}m{6.2cm}>{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000\arraybackslash}X@{}}
+        \toprule
+        \textbf{Sub-agent} & \textbf{Binding constraint covered} \\
+        \midrule
+        \textbf{Scalable Architecture} \newline \texttt{scale\_arch} & Designing for concurrency, or for spreading the work across more machines, beyond the load the system carries today. \\ \addlinespace[0.9em]
+        \textbf{Legacy Compatibility} \newline \texttt{legacy\_compat} & An existing API contract, client, or dependency that cannot change. \\ \addlinespace[0.9em]
+        \textbf{Strict Regulatory Compliance} \newline \texttt{strict\_compliance} & A security, privacy, or regulatory rule. \\ \addlinespace[0.9em]
+        \textbf{Resource Optimization} \newline \texttt{resource\_opt} & A fixed CPU, memory, or cost ceiling. \\ \addlinespace[0.9em]
+        \textbf{Time-to-Market} \newline \texttt{time\_to\_market} & A fixed ship date or delivery deadline that cannot move. \\
+        \bottomrule
+    \end{tabularx}
+    \caption[The five sub-agents and the binding constraint each one covers]{The five sub-agents and the binding constraint each one covers.}
+    \label{tab:sub-agent-taxonomy}
+\end{table}
+
+\clearpage
+\subsection{Example}
+\label{subsec:constraints-example}
+
+The following example illustrates a request that introduces a conflict between two constraints.
+
+\begin{scenariobox}{Request}
+\textit{``The events table and the reporting API share a connection pool today and it falls over under spikes. \binding{Our architect requires them separated into services with independent database access so instances scale out without contending for the same resources.} \waived{The analytics team would rather the API's response format stayed unchanged for existing clients, though they have agreed to a parallel-format window if we need to change it.} Where I would like input is the boundary itself: what belongs in the reporting service versus the events service, and how the read path crosses it.''}
+\end{scenariobox}
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\tabularxcolumn}[1]{m{#1}}
+    \begin{tabularx}{\textwidth}{@{}l>{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000\arraybackslash}X>{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000\arraybackslash}X@{}}
+        \toprule
+         & \textcolor{bindingcolor}{\textbf{Binding}} & \textcolor{waivedcolor}{\textbf{Waived}} \\
+        \midrule
+        \textbf{Constraint} & separate the events table and the reporting API into independently scaling services & keep the API's response format unchanged for existing clients \\ \addlinespace[0.9em]
+        \textbf{Authority} & the architect & the analytics team \\ \addlinespace[0.9em]
+        \textbf{Reason waived} & --- & agreed to a parallel-format window if the response format needs to change \\ \addlinespace[0.9em]
+        \textbf{Owned by} & Scalable Architecture & Legacy Compatibility \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+As the example shows, a request can carry terminology for more than one sub-agent while only one of them is correct. A single binding constraint per request ensures exactly one correct sub-agent, the first requirement from Section~\ref{sec:dataset-requirements}, while the request still carries conflicting terminology.
+
+\clearpage
+\subsection{The Collision Graph}
+\label{subsec:collision-graph}
+
+Every pair of sub-agents carries a tension: a stated reason why their binding constraints conflict. With five sub-agents, ten pairs are possible, and Table~\ref{tab:collision-graph} lists all of them, from Section~\ref{subsec:sub-agent-taxonomy}, together with the tension each pair carries. The graph is complete: a collision is defined for every pair of sub-agents.
+
+\vspace*{\fill}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}ll>{\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000\arraybackslash}m{9.5cm}@{}}
+        \toprule
+        \textbf{Sub-agent A} & \textbf{Sub-agent B} & \textbf{Tension} \\
+        \midrule
+        \texttt{time\_to\_market} & \texttt{scale\_arch} & Meeting the deadline can require hardcoding assumptions that break once the system has to handle far more load. \\ \addlinespace[0.9em]
+        \texttt{time\_to\_market} & \texttt{resource\_opt} & Meeting the deadline can require spending more on compute or services than a fixed budget can cover. \\ \addlinespace[0.9em]
+        \texttt{time\_to\_market} & \texttt{legacy\_compat} & Meeting the deadline can require changing or bypassing an existing contract that other clients still depend on. \\ \addlinespace[0.9em]
+        \texttt{time\_to\_market} & \texttt{strict\_compliance} & Meeting the deadline can require skipping a security or privacy check that a regulation requires. \\ \addlinespace[0.9em]
+        \texttt{scale\_arch} & \texttt{resource\_opt} & Scaling the architecture can require running more instances, which raises cost beyond a fixed budget. \\ \addlinespace[0.9em]
+        \texttt{scale\_arch} & \texttt{legacy\_compat} & Scaling the architecture can require changing an interface that existing clients depend on. \\ \addlinespace[0.9em]
+        \texttt{scale\_arch} & \texttt{strict\_compliance} & Scaling the architecture may require replicating data across more machines, which can move it outside a boundary that strict compliance requires it to stay within. \\ \addlinespace[0.9em]
+        \texttt{resource\_opt} & \texttt{legacy\_compat} & Optimizing resources can require removing an abstraction layer, which changes a signature that existing clients depend on. \\ \addlinespace[0.9em]
+        \texttt{resource\_opt} & \texttt{strict\_compliance} & Optimizing resources can require cutting a control, such as logging or encryption, that a regulation requires. \\ \addlinespace[0.9em]
+        \texttt{legacy\_compat} & \texttt{strict\_compliance} & Preserving old behavior can require keeping a practice, such as an old data-handling method, that a new regulation no longer permits. \\
+        \bottomrule
+    \end{tabular}
+    \caption[Ten colliding constraint pairs among the five sub-agents]{The ten colliding pairs among the five sub-agents, and the tension each pair carries.}
+    \label{tab:collision-graph}
+\end{table}
+\vspace*{\fill}
+
+\clearpage
+\subsection{Difficulty Tiers}
+\label{subsec:difficulty-tiers}
+
+Samples are generated at three difficulty tiers. The tiers introduce the lexical difficulty required in Section~\ref{subsec:lexical-separability}.
+
+\begin{itemize}
+    \item \texttt{plain}: no collision. Only one constraint is stated, and it is binding, so nothing in the request competes with the correct sub-agent. A classifier or a probe is expected to score close to ceiling accuracy on this tier. A low accuracy score would point to a problem in how samples are generated or labeled, rather than to a hard routing decision.
+    \item \texttt{natural}: a collision between two sub-agents, as in Table~\ref{tab:collision-graph}. The request talks about both constraints equally, and it says explicitly which one has been waived and by whom. A classifier is expected to score lower on this tier than on the \texttt{plain} tier, because the request also contains the vocabulary of a second sub-agent. An accuracy score equal to or higher than that of the \texttt{plain} tier would point to a waived constraint that is stated too weakly to compete with the binding one.
+    \item \texttt{adversarial}: samples are built in pairs. The two requests of a pair share almost all their wording. They differ in only one short clause that names the constraint that has been waived. Each of the two requests names a different constraint as waived, so the pair's two correct sub-agents differ even though the requests are almost identical. A classifier is expected to score lower on this tier than on the \texttt{natural} tier, since most of the words it can use appear in both requests of a pair. An accuracy score equal to or higher than that of the \texttt{natural} tier would point to pairs whose requests differ in more than one clause, so that the remaining wording still identifies the correct sub-agent.
+\end{itemize}
+
+Within the \texttt{adversarial} tier, a pair is built around its decoy (Section~\ref{subsec:constraints-binding-waived}): the request presents the decoy's constraint, through its wording and emphasis, as if it were the binding one. The real binding constraint is still stated in the request, but it is written so that it is easy to miss. Four \emph{decoy patterns} are used to write the binding constraint this way, each applying only to the \texttt{adversarial} construction.
+
+These patterns are designed to make routing harder for a coordinator model, not only for the text-only classifiers of Section~\ref{sec:dataset-baselines}.
+
+In each example below, \binding{blue} marks the binding constraint.
+
+\begin{itemize}
+    \item \textbf{\texttt{buried\_rule}}: the request asks how to carry out one specific approach, for example a workaround. The binding constraint appears in only one clause of the request, and that clause states why the developer picked that approach instead of a simpler one.
+
+    \begin{scenariobox}{Example -- \texttt{buried\_rule}}
+    \textit{``We're trying to split the aggregate computation from the request handler so each can scale independently when we hit 10 million requests a day, though the infrastructure roadmap has that decoupling pushed out to next quarter, but \binding{the legacy API contract locks the response format to a specific JSON field at the top level and we have to keep it working.} Building around that constraint means the aggregation layer stays coupled to the response path. How do we handle the data flow here without rebuilding the response schema from scratch?''}
+    \end{scenariobox}
+
+    \item \textbf{\texttt{wrong\_cause}}: the request misleads on the cause of the problem. It confidently claims that the decoy constraint is the problem to be solved, and spends most of its words on it. The binding constraint appears only as a short fact, stated as if it were already obvious, with no explanation given.
+
+    \begin{scenariobox}{Example -- \texttt{wrong\_cause}}
+    \textit{``we're hitting memory ceiling hard on the cache, \binding{been blowing past the 512mb heap limit ops set,} and we keep trying to add smarter eviction policies and better compression to squeeze more in there, but the real problem is we can't reshape the response payload the way we need to because every mobile client and partner out there is hardwired to expect the exact json schema we published two years ago, though the api team cleared us to rework the output format if we have to. how do we get the instance footprint back under control without redesigning the whole data contract?''}
+    \end{scenariobox}
+
+    \item \textbf{\texttt{late\_mandate}}: the request is about the decoy constraint throughout. The binding constraint arrives at the end, in one flat-toned clause, so it reads as minor.
+
+    \begin{scenariobox}{Example -- \texttt{late\_mandate}}
+    \textit{``been looking at our read function design and we're spawning a helper thread for each request that comes in. works fine at current scale but the devops budget owner just locked us into a hard 512mb ceiling and max 64 threads, and they said we can revisit the threading model once we have more headroom in the budget. we have a bunch of production clients calling this function synchronously expecting it to block, and \binding{the platform arch team requires the function signature to stay exactly as-is.} so how do we actually redesign this without breaking the existing interface?''}
+    \end{scenariobox}
+
+    \item \textbf{\texttt{bad\_fix}}: the request misleads on the solution. It proposes a concrete fix that serves the decoy constraint, and asks for help carrying it out. The request also states the binding constraint, and that constraint is the reason the proposed fix does not work.
+
+    \begin{scenariobox}{Example -- \texttt{bad\_fix}}
+    \textit{``We're building a user profile cache that lives in process memory keyed by user id, and the product manager needs us to ship something working to early adopters in six weeks, with hardcoded cache sizes and TTLs acceptable to hit that deadline, but that timeline got pushed back in the roadmap review. At the same time, \binding{the operations team has set a hard ceiling of 512 megabytes of heap per instance for all caching and won't budge on that limit.} I'm proposing we start with simple fixed-size arrays and stop worrying about memory efficiency for now, which should get us there cheapest. How should we structure this to stay strictly within budget while keeping the implementation straightforward?''}
+    \end{scenariobox}
+\end{itemize}
+
+\subsection{Personas}
+\label{subsec:personas}
+
+Four writing-style categories, called \emph{personas}, are used to generate a request. Personas exist to satisfy the requirement, from Section~\ref{subsec:lexical-separability}, that punctuation and phrasing styles stay balanced across sub-agents: assigning personas independently of the sub-agent prevents a sub-agent from being identifiable by a stylistic marker rather than by its content. Personas are assigned in equal proportions within every difficulty tier.
+
+\begin{itemize}
+    \item \textbf{\texttt{normal\_writing}}: the request reads as ordinary professional prose, written in complete sentences with correct punctuation.
+    \item \textbf{\texttt{frustrated}}: the request reads as written by someone tired and irritated. Sentences are blunt, some sentences vent about the situation, and some sentences are incomplete, missing a subject or a verb.
+    \item \textbf{\texttt{casual}}: the request reads as a relaxed chat message. It uses contractions, starts some sentences with a lowercase letter, and contains occasional small spelling or grammar mistakes.
+    \item \textbf{\texttt{extremely\_casual}}: the request reads as a message typed in a hurry. It is mostly lowercase, uses minimal punctuation, and shortens words into abbreviations.
+\end{itemize}
+
+\subsection{Multi-turn Derivation}
+\label{subsec:multiturn-derivation}
+
+The multi-turn dataset uses a fixed number of turns, following the requirement in Section~\ref{subsec:multiturn-setting}. Every multi-turn sample starts with a developer message, and the developer and the coordinator then alternate messages. The conversation ends on a developer message, left unanswered, and the whole conversation is routed based on it. Together with the developer messages and the coordinator responses before it, this last message forms a fixed number of turns for every multi-turn sample. Conversation length therefore does not become a second difficulty axis alongside the three tiers. Each sample contains two full developer and coordinator turns, followed by the final, unanswered developer message, as Figure~\ref{fig:multiturn-alternation} shows.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=6mm,
+        every node/.style={font=\small},
+        box/.style={draw, rounded corners, align=center, minimum height=8mm, minimum width=18mm},
+        arr/.style={-{Latex[length=2mm]}}
+        ]
+        \node[box] (d1) {Developer};
+        \node[box, right=of d1] (c1) {Coordinator};
+        \node[box, right=of c1] (d2) {Developer};
+        \node[box, right=of d2] (c2) {Coordinator};
+        \node[box, right=of c2] (d3) {Developer};
+        \draw[arr] (d1) -- (c1);
+        \draw[arr] (c1) -- (d2);
+        \draw[arr] (d2) -- (c2);
+        \draw[arr] (c2) -- (d3);
+    \end{tikzpicture}
+    \caption[Message alternation in a multi-turn sample]{Message alternation in a multi-turn sample.}
+    \label{fig:multiturn-alternation}
+\end{figure}
+
+Single-turn constructions map to multi-turn ones directly: the same taxonomy, the same three difficulty tiers, the same personas and patterns, distributed across messages instead of stated once in a single message.
+
+In a multi-turn adversarial pair, every message before the final one is identical, word for word, between the two members of the pair. The two requests differ only in the final, unanswered developer message, the same way the two requests of a single-turn adversarial pair differ only in one short clause. Figure~\ref{fig:multiturn-adversarial-fork} shows this shared prefix and the two final messages that follow it.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=6mm,
+        every node/.style={font=\small},
+        box/.style={draw, rounded corners, align=center, minimum height=8mm, minimum width=18mm},
+        arr/.style={-{Latex[length=2mm]}}
+        ]
+        \node[box] (d1) {Developer};
+        \node[box, right=of d1] (c1) {Coordinator};
+        \node[box, right=of c1] (d2) {Developer};
+        \node[box, right=of d2] (c2) {Coordinator};
+        \node[box, above right=4mm and 12mm of c2] (s1) {Developer\\\scriptsize (Sample 1)};
+        \node[box, below right=4mm and 12mm of c2] (s2) {Developer\\\scriptsize (Sample 2)};
+        \draw[arr] (d1) -- (c1);
+        \draw[arr] (c1) -- (d2);
+        \draw[arr] (d2) -- (c2);
+        \draw[arr] (c2) -- (s1);
+        \draw[arr] (c2) -- (s2);
+    \end{tikzpicture}
+    \caption[Shared prefix and final messages of a multi-turn adversarial pair]{Shared prefix and final messages of a multi-turn adversarial pair.}
+    \label{fig:multiturn-adversarial-fork}
+\end{figure}

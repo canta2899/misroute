@@ -1,0 +1,50 @@
+\section{Conditions of Use}
+\label{sec:ch9-conditions}
+
+The implications just described assume that the hidden states of the coordinator are available and that a probe has been trained on them. A multi-agent system meets this assumption only under certain conditions of use, which concern whether the inference server returns the hidden states of the coordinator, the memory needed to extract them, and the labeled data needed to train the probe.
+
+LLM-based agents commonly interact with large language models through an \emph{inference server}, a process that loads a model and runs it each time it receives a request. The model runs on the GPUs of the machine that hosts the server, so the agent does not need to load the model weights or run the forward pass itself. The agent invokes the model through the API endpoints that the server exposes: it sends the prompt in a request and receives the generated text in the response. These endpoints can belong to a frontier-model API that a provider runs on its own infrastructure, such as the OpenAI API or the Anthropic API. They can also belong to a self-hosted inference server, deployed on self-managed infrastructure. Common self-hosted inference servers include \texttt{llama.cpp}, \texttt{vLLM}, \texttt{SGLang}, and \texttt{MLX}.
+
+\subsection{Hidden States in the Server Response}
+\label{subsec:ch9-flag-access}
+
+Frontier-model APIs do not provide access to the hidden states. Exposing them may also be a security risk for the provider, because they allow a third party to reconstruct parts of a proprietary model without access to its weights. Carlini et al. showed that the log-probabilities and the logit bias exposed by production APIs were sufficient to recover the final projection layer and the hidden dimension of OpenAI models \cite{carliniStealingPartProduction2024}. The hidden states expose more of the model than these outputs. Jiao et al. used \emph{knowledge distillation} to train a smaller model that reproduces the hidden states of a larger model, so that the smaller model could be used in place of the larger one \cite{jiaoTinyBERTDistillingBERT2020}. A third party that receives the hidden states of a proprietary model could apply the same method to obtain a smaller model that replaces the proprietary one.
+
+Self-hosted inference servers have no standard method to provide access to the hidden states. Each server that supports this access implements it in a different way. The documentation of \texttt{llama.cpp} and of \texttt{MLX} lists no option to return the hidden states \cite{LlamacppToolsServer, MlxlmMlx_lmSERVERmd}. The \texttt{vLLM} server can extract the hidden states of the prompt tokens at selected layers, but it does not return them to the caller: it writes them to a file on disk and returns only the path of the file in the response \cite{teamExtractingHiddenStates2026}. Among the four servers, only \texttt{SGLang} returns the hidden states in the response, through a server argument that enables this feature \cite{ServerArguments}.
+
+\subsection{Inference Cost}
+\label{subsec:ch9-flag-cost}
+
+Where the hidden states are accessible, extracting them increases the memory that inference requires. As Section~\ref{subsec:hidden-states} describes, the hidden state $h^{(\ell)}_i$ of every layer $\ell$ and every token $i$ is a vector of $d_{\mathrm{model}}$ values. The extracted hidden states are held in VRAM or RAM, and the memory they occupy grows linearly with the number of layers and tokens they cover.
+
+Each value of a hidden state vector occupies $b$ bytes, with $b = 2$ for 16-bit and $b = 4$ for 32-bit floating-point values. The hidden states of one token therefore occupy $b \times d_{\mathrm{model}}$ bytes at one layer and $b \times L \times d_{\mathrm{model}}$ bytes at all $L$ layers. Table~\ref{tab:ch9-hidden-state-size} reports both sizes for the models of Table~\ref{tab:model-properties}.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{lrrrrrr}
+        \toprule
+        & & & \multicolumn{2}{c}{One layer (KiB)} & \multicolumn{2}{c}{All $L$ layers (KiB)} \\
+        \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+        Model & $d_{\mathrm{model}}$ & $L$ & 16-bit & 32-bit & 16-bit & 32-bit \\
+        \midrule
+        Gemma 4 E2B IT & 1536 & 35 & 3.0 & 6.0 & 105.0 & 210.0 \\
+        Qwen3 4B Instruct 2507 & 2560 & 36 & 5.0 & 10.0 & 180.0 & 360.0 \\
+        Qwen3 8B & 4096 & 36 & 8.0 & 16.0 & 288.0 & 576.0 \\
+        Gemma 4 12B IT & 3840 & 48 & 7.5 & 15.0 & 360.0 & 720.0 \\
+        GPT-OSS 20B & 2880 & 24 & 5.6 & 11.3 & 135.0 & 270.0 \\
+        Gemma 4 26B A4B IT & 2816 & 30 & 5.5 & 11.0 & 165.0 & 330.0 \\
+        Llama 3.3 70B Instruct & 8192 & 80 & 16.0 & 32.0 & 1280.0 & 2560.0 \\
+        Qwen2.5 72B Instruct & 8192 & 80 & 16.0 & 32.0 & 1280.0 & 2560.0 \\
+        \bottomrule
+    \end{tabular}
+    \caption[Hidden-state memory per token, at one layer and at all $L$ layers]{Memory occupied by the hidden states of one token, at one layer and at all $L$ layers, with 16-bit and 32-bit floating-point values (1~KiB = 1024 bytes).}
+    \label{tab:ch9-hidden-state-size}
+\end{table}
+
+Requesting the hidden states together with the response from an inference server may therefore increase the memory usage of the server and slow down inference. It may also considerably increase the size of the payload that the server returns for each request.
+
+\subsection{Cold-Start Problem}
+\label{subsec:ch9-flag-cold-start}
+
+A probe is subject to a \emph{cold-start problem}, because it needs labeled data to be trained. Every probe in this work is trained on samples whose correct sub-agent is set by the generation plan of Chapter~\ref{chap:dataset-construction}. A real production system typically has no labeled data at the time of its first release. Labeled data accumulates only after the system is deployed, either from human annotation or from usage history annotated after the routing decision. Once enough labeled data has accumulated, a probe can be trained and used as a misrouting flag. However, the probe would need to be retrained every time the routing task changes, for example when a sub-agent is added, removed, or redefined. It would also need to be retrained every time the coordinator model changes, because a different model may have a different optimal layer, and the accuracy gained by probing that layer may also differ. A change of the coordinator prompt may also affect the accuracy of the probe, because the hidden state at the last prompt token is computed from the entire prompt. The effect of a prompt change on the accuracy of the probe is not measured in this work, and neither is the number of labeled samples a probe needs before it can be used as a misrouting flag. Section~\ref{sec:ch9-future-work} lists both questions as future work.

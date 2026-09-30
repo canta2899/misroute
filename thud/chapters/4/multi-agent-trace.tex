@@ -1,0 +1,14 @@
+\section{The Multi-Agent Trace}
+\label{sec:multi-agent-trace}
+
+The evaluation methods surveyed in Section~\ref{sec:trajectory-aware-evaluation} score a single agent's trajectory: its sequence of intermediate steps, tool calls, plans, and decisions. This framing does not cover what happens once several agents work together, as described in Chapter~\ref{chap:agents}. In a multi-agent system, agents exchange messages along a given topology. A single agent's trajectory records only that agent's own steps, so it captures neither the messages exchanged with other agents nor the topology they flow along. Evaluating such a system therefore requires a concept broader than a single trajectory, called the \emph{trace}, which consists of every participating agent's trajectory, the inter-agent messages exchanged between them, and the topology along which those messages and outputs flow. Trajectory-aware evaluation, as scoped in Section~\ref{sec:trajectory-aware-evaluation}, accounts for the first component of the trace; it does not account for the second and third.
+
+Cemri et al. studied failures of multi-agent LLM systems using this broader concept, the execution trace, rather than individual agent trajectories \cite{cemriWhyMultiAgentLLM2025a}. Working from a set of traces produced by running multi-agent systems on their target tasks, they analyzed an initial set of 150 traces and derived from it a taxonomy of failure modes, the Multi-Agent System Failure Taxonomy (MAST) \cite{cemriWhyMultiAgentLLM2025a}. The taxonomy was then validated by annotating a larger set of 1642 traces against its failure modes, with inter-annotator agreement reported for the labeling procedure \cite{cemriWhyMultiAgentLLM2025a}. MAST groups 14 distinct failure modes into three categories \cite{cemriWhyMultiAgentLLM2025a}:
+
+\begin{itemize}
+    \item \emph{System Design Issues}: failures that originate from system design decisions, and from poor or ambiguous prompt specifications.
+    \item \emph{Inter-Agent Misalignment}: failures that arise from a breakdown in the flow of information between agents during execution, such as a failure to share information, a misinterpretation of another agent's output, or a departure from an agreed task specification.
+    \item \emph{Task Verification}: failures that involve inadequate verification of the final output, including no or incomplete verification, incorrect verification, or terminating the task before it is complete.
+\end{itemize}
+
+Inter-agent misalignment accounted for over 30\% of observed failures across the annotated set of 1642 traces \cite{cemriWhyMultiAgentLLM2025a}, and it is distinct from the other two categories, which are attributable to the design of a single agent or to the absence of a verification step. Since these failure modes are properties of the messages exchanged between agents and not of any single agent's trajectory, they are only visible when the trace is the object under evaluation.

@@ -1,0 +1,45 @@
+\section{Model Choice}
+\label{sec:model-choice}
+
+The experiment runs on eight open-weight models, chosen to satisfy the requirements of Section~\ref{subsec:model-pool-requirements}. The model pool spans:
+
+\begin{itemize}
+    \item the Gemma 4 family by Google DeepMind \cite{teamGemma4Technical2026}, at three parameter sizes: E2B (5B total parameters, of which 2.3B are effective due to its internal architecture \cite{teamGemma4Technical2026}), 12B, and 26B A4B (a mixture-of-experts model, as defined in Section~\ref{subsec:dense-moe}, with 26B total parameters, of which 3.8B are active per token \cite{teamGemma4Technical2026}). Gemma 4 is the latest model family that Google DeepMind had released as of this writing (September 2026)
+    \item the Qwen3 family by the Qwen Team (Alibaba) \cite{yangQwen3TechnicalReport2025}, at two parameter sizes: 4B and 8B
+    \item GPT-OSS 20B by OpenAI \cite{openaiGptoss120bGptoss20bModel2025}
+    \item Llama 3.3 70B Instruct by Meta \cite{MetallamaLlama3370BInstructHugging2024}
+    \item Qwen2.5 72B Instruct by the Qwen Team (Alibaba) \cite{qwenQwen25TechnicalReport2025}
+\end{itemize}
+
+The model pool allows the probe to be tested on models from different providers, whose parameter count spans from a few billion to over seventy billion. Table~\ref{tab:model-properties} reports the architecture, parameter count, and layer count of each model. Each model family also relies on its own chat template, which is needed to format the prompt and the tool definitions correctly and to read the response correctly, as described in Section~\ref{subsec:rendered-example}.
+
+Every model is configured to generate with sampling disabled, under greedy decoding as described in Section~\ref{subsec:decoding}, so that its routing decision is deterministic. This setting satisfies the replicability requirement that Section~\ref{subsec:model-pool-requirements} states for the model pool.
+
+\begin{table}[htbp]
+    \centering
+    \footnotesize
+    \setlength{\tabcolsep}{4pt}
+    \begin{tabular}{lllrrrrl}
+        \toprule
+        Full name & Identifier & Provider & Total & Active & Layers & $d_{\mathrm{model}}$ & Chat template \\
+        \midrule
+        Gemma 4 E2B IT & \texttt{gemma4-e2b-it} & Google DeepMind & 5B & 2.3B & 35 & 1536 & gemma4 \\
+        Qwen3 4B Instruct 2507 & \texttt{qwen3-4b} & Qwen Team (Alibaba) & 4B & 4B & 36 & 2560 & hermes \\
+        Qwen3 8B & \texttt{qwen3-8b} & Qwen Team (Alibaba) & 8B & 8B & 36 & 4096 & hermes \\
+        Gemma 4 12B IT & \texttt{gemma4-12b-it} & Google DeepMind & 12B & 12B & 48 & 3840 & gemma4 \\
+        GPT-OSS 20B & \texttt{gpt-oss-20b} & OpenAI & 20.9B & 3.6B & 24 & 2880 & harmony \\
+        Gemma 4 26B A4B IT & \texttt{gemma4-26b-a4b-it} & Google DeepMind & 26B & 3.8B & 30 & 2816 & gemma4 \\
+        Llama 3.3 70B Instruct & \texttt{llama3.3-70b} & Meta & 70B & 70B & 80 & 8192 & llama3 \\
+        Qwen2.5 72B Instruct & \texttt{qwen2.5-72b} & Qwen Team (Alibaba) & 72B & 72B & 80 & 8192 & hermes \\
+        \bottomrule
+    \end{tabular}
+    \caption[Properties of the eight models used in this chapter]{Properties of the eight models used in this chapter.}
+    \label{tab:model-properties}
+\end{table}
+
+\subsection{Chain-of-Thought Output}
+\label{subsec:ch7-reasoning-traces}
+
+Section~\ref{subsec:chain-of-thought} describes chain-of-thought output as text that a model generates before its response. Both the Gemma 4 family and the Qwen3 family in this pool call this a \emph{thinking mode} and let it be turned on or off at inference time \cite{teamGemma4Technical2026, yangQwen3TechnicalReport2025}.
+
+In this work, thinking mode is always turned off where available, so the models are compared under the same condition. The only exception is GPT-OSS 20B, which, by design, does not allow chain-of-thought output to be disabled \cite{openaiGptoss120bGptoss20bModel2025}. Instead, GPT-OSS 20B exposes a \emph{reasoning effort} setting, with three levels (\texttt{low}, \texttt{medium}, \texttt{high}), that controls how long this chain-of-thought output is \cite{openaiGptoss120bGptoss20bModel2025}. In this work, the reasoning effort is set to \texttt{low}.

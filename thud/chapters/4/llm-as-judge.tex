@@ -1,0 +1,67 @@
+\section{LLM-as-a-Judge}
+\label{sec:llm-as-judge}
+
+Each of HELM's 7 metrics from Section~\ref{sec:holistic-evaluation} is computed against a reference the scenario determines in advance. HELM's own evaluation includes two scenarios with no such reference: judging whether a generated headline or social media post supports a given thesis. None of the 7 metrics can be computed for these, so HELM falls back to human annotators recruited on Amazon Mechanical Turk, with each output rated by three workers, because no established automated evaluation exists for disinformation \cite{liangHolisticEvaluationLanguage2023}. Scoring an open-ended output therefore requires an \emph{oracle} in place of a predetermined reference string: a procedure that returns a verdict, given a candidate output, on whether it is a good answer. HELM uses a human rater for this case; a human rater is one such oracle, but human rating at scale is costly and could lead to poor repeatability. Using a language model as a reference-free evaluator has since been proposed by a growing body of work as a scalable alternative to a human rater \cite{liuGEvalNLGEvaluation2023}: instead of a human, a language model reads the candidate output and produces a verdict on its quality, standing in for the human rater or for a task-specific score function. This approach is named LLM-as-a-judge, and the model performing the grading is the judge.
+
+\subsection{Grading Modes and the Reliability Question}
+\label{sec:llm-as-judge-reliability}
+
+Zheng et al. define three ways the judge can be used \cite{zhengJudgingLLMasaJudgeMTBench2023}:
+
+\begin{itemize}
+    \item \emph{Pairwise comparison}: the judge reads two candidate responses to the same prompt and states which one is better, or declares a tie.
+    \item \emph{Single-answer grading}: unlike in pairwise comparison, the judge reads one response, with no other response to compare it against, and assigns it a score on a predetermined scale.
+    \item \emph{Reference-guided grading}: the judge reads the candidate response together with a reference answer or a set of grading instructions, and scores the candidate against that reference.
+\end{itemize}
+
+Zheng et al. evaluate GPT-4 as a judge on two benchmarks built for this purpose: MT-Bench, a set of 80 multi-turn, open-ended questions spanning categories such as writing, reasoning, and coding, and Chatbot Arena, a crowdsourced platform on which users pose the same prompt to two anonymized models and vote for the response they prefer \cite{zhengJudgingLLMasaJudgeMTBench2023}. On these two benchmarks, GPT-4 agreed with human preference more than 80\% of the time, reaching 85\% on MT-Bench. The authors report this rate as matching, and on MT-Bench slightly exceeding, the 81\% agreement measured between two human annotators \cite{zhengJudgingLLMasaJudgeMTBench2023}. The result reads as evidence that a judge model can stand in for a human rater with little loss of reliability.
+
+Reliability also depends on whether a judge's verdict is stable and free of bias. Shi et al. test this by evaluating fifteen LLM judges across MT-Bench and DevBench, a benchmark of software development tasks, over more than 150,000 evaluation instances \cite{shiJudgingJudgesSystematic2025}. Position bias is the tendency to favor a response because of its position in the comparison, such as being listed first, rather than because of its content. They report that position bias is both judge-dependent and task-dependent: the same judge model does not show the same degree of it across tasks, and different judge models rank differently on the same task \cite{shiJudgingJudgesSystematic2025}. Comparing judges against each other, rather than against human raters, they also find that judges with similar aggregate consistency scores frequently disagree on individual instances, with disagreement concentrated on cases where the candidate responses being compared are close in quality \cite{shiJudgingJudgesSystematic2025}. A bias or consistency figure reported for one judge on one benchmark therefore does not transfer to a different judge or a different benchmark without being measured again.
+
+\subsection{G-Eval: A Framework for Building LLM-based Metrics}
+\label{sec:llm-as-judge-geval}
+
+Liu et al. propose G-Eval, not a single metric but a framework for building an LLM-based metric for a given evaluation criterion \cite{liuGEvalNLGEvaluation2023}. A G-Eval metric is assembled from a task introduction, a natural language instruction that states the task being evaluated, and a definition of the evaluation criterion, for example coherence in text summarization. The judge model expands these into its own chain-of-thought of evaluation steps before it is shown the candidate output and asked to score it \cite{liuGEvalNLGEvaluation2023}.
+
+Reading a single score off the judge's output is unreliable in two ways that the authors report. First, one score value tends to dominate the distribution of outputs, which lowers the score's variance. Second, language models tend to return integer scores even when the prompt asks for decimal values, which produces ties that mask real differences between outputs \cite{liuGEvalNLGEvaluation2023}. G-Eval addresses both by reading the judge's probability distribution over the next token, at the position where the judge outputs its score. This is the same distribution over the vocabulary described in Section~\ref{subsec:unembedding}. From this distribution, only the probabilities of the tokens that denote a valid score value, such as the digits 1 to 5, are kept. The final score is the sum of each valid score value multiplied by its probability, rather than the single highest-probability token \cite{liuGEvalNLGEvaluation2023}. This turns a discrete, often-tied score into a continuous one, and is reported to raise the correlation with human judgment over the discrete version on the SummEval benchmark \cite{liuGEvalNLGEvaluation2023}.
+
+With GPT-4 as the judge model, G-Eval reached an average Spearman correlation of 0.514 with human judgment on text summarization, averaged over four rated dimensions. This is a moderate correlation in absolute terms, but it is higher than the correlations reported for reference-based metrics such as ROUGE (0.192), embedding-based metrics such as BERTScore (0.225), and other LLM-based evaluators such as GPTScore (0.417) \cite{liuGEvalNLGEvaluation2023}. The authors report a systematic problem alongside this result: G-Eval assigns higher scores to GPT-3.5-generated summaries than to human-written ones, even in cases where human judges prefer the human-written summary, and attribute this to the judge favoring text similar to what it would generate itself \cite{liuGEvalNLGEvaluation2023}. Building a more accurate scoring function does not remove this kind of systematic deviation from human judgment; the next section places it within a broader taxonomy of such deviations.
+
+\subsection{Systematic Biases in LLM-Judge Verdicts}
+\label{sec:llm-as-judge-biases}
+
+The literature has organized systematic deviations from human judgment into a taxonomy of biases. Ye et al. identified twelve named bias types, each a way the judge's verdict can shift for reasons unrelated to the quality of the response being graded \cite{yeJusticePrejudiceQuantifying2024a}. Table~\ref{tab:llm-judge-biases} lists all twelve, with a description of each.
+
+\begin{table}[ht]
+    \centering
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{0.9\textwidth}{@{}>{\raggedright\arraybackslash}p{3.4cm}X@{}}
+        \toprule
+        Bias & Description \\
+        \midrule
+        Position bias & Favoring a response for the position it occupies in a pairwise comparison, rather than its content. \\
+        Verbosity bias & Favoring a longer response independently of its quality. \\
+        Compassion-fade bias & Judging the same content differently depending on whether the responses are attributed to named models. \\
+        Bandwagon bias & Favoring a response after being told it is the majority or popular choice. \\
+        Distraction bias & Being swayed by content in the response that is irrelevant to the criterion being graded. \\
+        Fallacy-oversight bias & Failing to penalize a response that contains a logical fallacy. \\
+        Authority bias & Favoring a response that cites sources or authorities, regardless of whether the citation supports the claim. \\
+        Sentiment bias & Favoring a response for its emotional tone rather than its content. \\
+        Diversity bias & Judging content differently depending on demographic or cultural markers present in it. \\
+        Chain-of-thought bias & The judge's own evaluation accuracy changes depending on whether it is prompted to reason step by step before returning a verdict. \\
+        Self-enhancement bias & Favoring a response the judge model itself, or a model similar to it, is more likely to have produced. \\
+        Refinement-aware bias & Judging a response differently once it is known to be a revision of an earlier one. \\
+        \bottomrule
+    \end{tabularx}
+    \caption[The twelve bias types identified in LLM-as-a-judge verdicts]{The twelve bias types Ye et al. identify in LLM-as-a-judge verdicts \cite{yeJusticePrejudiceQuantifying2024a}.}
+    \label{tab:llm-judge-biases}
+\end{table}
+
+Two of these have been studied as specific cases on their own.
+\begin{itemize}
+	\item Position bias: Shi et al. found that its strength depends on the quality gap between the two responses compared: the closer the two responses are in quality, the more the judge's verdict is affected by which position each response occupies \cite{shiJudgingJudgesSystematic2025}.
+	\item Self-enhancement bias, referred to by Wataoka et al. as self-preference: they reported that GPT-4, used as a judge, exhibits a significant degree of self-preference, and attributed this to language models favoring text that is more familiar to them, including text that the model itself, or a model similar to it, is more likely to have produced \cite{wataokaSelfPreferenceBiasLLMasaJudge2025}.
+\end{itemize}
+
+Relative to the reference-based metrics of Section~\ref{sec:text-matching-benchmarks}, an LLM judge can grade an output for which no predetermined reference exists, since the judge substitutes for the reference rather than requiring one. This is what makes it applicable to open-ended generation. The cost of this flexibility is exposure to the biases described above. A reference-based metric scores one output at a time against its predetermined reference string, so the position of a response in a comparison cannot affect its score. It also does not generate text itself, so it cannot favor a response for resembling its own output, unlike a judge model. An LLM judge reads the full context of the comparison, so it is exposed to signals that the grading task was not meant to depend on. The rate of this exposure depends on the judge model, the task, and the grading mode, so it must be measured for the specific setting the judge is deployed in, not assumed from a bias rate reported in a different study.
+

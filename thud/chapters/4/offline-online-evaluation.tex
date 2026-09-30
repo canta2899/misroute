@@ -1,0 +1,31 @@
+\section{Offline and Online Evaluation}
+\label{sec:offline-online-evaluation}
+
+\subsection{Definitions and Feedback Loop}
+\label{sec:offline-online-definitions}
+
+Xia et al. distinguished two stages at which a check can run, offline and online, and described evaluation-driven development and operations (EDDOps), an approach that places the two within a single closed feedback loop rather than treating them as alternatives \cite{xiaEvaluationDrivenDevelopmentOperations2025}. In EDDOps, offline and online evaluation results both feed a shared analysis step, which drives either a bounded runtime adjustment or a governed offline redevelopment. A redevelopment change is then re-verified with offline evaluation on the same cases before it reaches the live system \cite{xiaEvaluationDrivenDevelopmentOperations2025}.
+
+\begin{itemize}
+    \item \emph{Offline evaluation} runs against a predetermined suite of tasks or logged trajectories, on a subset of cases, ahead of release.
+    \item \emph{Online evaluation} runs against live traffic, continuously, while the system operates in deployment.
+\end{itemize}
+
+A predetermined offline suite covers only a limited slice of the conditions a system meets after deployment. Xia et al. made the same point: predetermined suites cover a limited slice of possible tasks and inputs, so they are less likely to surface issues that emerge with changing data, tools, or user behavior \cite{xiaEvaluationDrivenDevelopmentOperations2025}. Online evaluation catches what the predetermined suite structurally cannot: conditions outside the suite, met only after deployment, such as emergent failures, drift, or violations of latency, cost, and availability targets \cite{xiaEvaluationDrivenDevelopmentOperations2025}.
+
+\subsection{Security Evaluation}
+\label{sec:security-evaluation}
+
+Security is a further object of evaluation, and it motivates red-teaming, evaluation carried out by proactively attacking or testing a system to identify its vulnerabilities \cite{purpuraBuildingSafeGenAI2025}. Purpura et al. note that red-teaming is useful for an organization that wants to anticipate threats to its system and safeguard against them before production, but also that red-teaming alone does not guarantee the safety of a model after deployment, and recommend constant monitoring of a system once it is in production \cite{purpuraBuildingSafeGenAI2025}. Red-teaming therefore runs in both modes: an offline check performed once before release, and an online one run continuously against live traffic.
+
+Purpura et al. distinguish red-teaming from guardrailing: red-teaming probes a system for vulnerabilities before deployment, and guardrailing safeguards the system after deployment \cite{purpuraBuildingSafeGenAI2025}. A guardrail is a check placed on a model's input or output, run online, that blocks a request or a response before it reaches the next step.
+
+\subsection{Early Exit and the Feedback Loop}
+\label{sec:early-exit-feedback-loop}
+
+Running a check online, continuously, adds a capability an offline check cannot offer regardless of what it measures: the run can be stopped at the point the check fails, before the steps that would follow are executed. This is an alternative to the costly post-hoc attribution introduced in Section~\ref{sec:cost-of-attribution}: instead of reconstructing after the fact which step of a completed trace caused a failure, an online check identifies the failing step as it happens, and the run can exit there rather than run to completion. This early exit matters most for multi-agent systems and long trajectories. Without it, a run already known to have failed at one step would otherwise continue producing further steps, agent calls, and tool calls. The cost of those further steps is spent on a trajectory that cannot succeed. Stopping at the point of failure avoids this additional cost, and, since the state at that point is already checkpointed, the run can also be resumed or repaired from the failing step rather than discarded outright.
+
+What happens after a check fails is decided by error handling, a step distinct from the check itself: the run is resumed from the checkpoint, repaired, or discarded, depending on the kind of failure that the check detected. Guardrailing is one instance of this pattern: it triggers the exit, and error handling determines the response that follows, such as refusing the request or returning a safe fallback.
+
+This closes the loop described in Section~\ref{sec:offline-online-definitions}: evidence collected online about where and how a system fails is fed back to build the checks that later run online, so that a failure pattern identified once informs the check that catches and stops the same pattern the next time it occurs.
+

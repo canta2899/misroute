@@ -1,0 +1,128 @@
+\def\thudbabelopt{italian,english}
+\documentclass[target=mst,aauheader=,style=]{thud}
+
+\course{Computer Science}
+\title{Detecting Routing Failures in LLM-based Multi-Agent Systems through Linear Probes}
+\author{Andrea Cantarutti}
+\supervisor{Prof.\ Giorgio Brajnik}
+\cosupervisor{Prof.\ Kevin Roitero}
+
+\usepackage[a-2b]{pdfx}
+\usepackage[numbers]{natbib}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning}
+\usepackage[most]{tcolorbox}
+\usepackage{colortbl}
+\usepackage[normalem]{ulem}
+\definecolor{bindingcolor}{RGB}{0,90,156}
+\definecolor{waivedcolor}{RGB}{180,80,0}
+\definecolor{omegaSmall}{RGB}{214,234,248}
+\definecolor{omegaMedium}{RGB}{133,193,233}
+\definecolor{omegaLarge}{RGB}{41,128,185}
+\newcommand{\binding}[1]{{\color{bindingcolor}\uline{#1}}}
+\newcommand{\waived}[1]{\textcolor{waivedcolor}{#1}}
+\newcommand{\subA}[1]{\textcolor{bindingcolor}{#1}}
+\newcommand{\subB}[1]{\textcolor{waivedcolor}{#1}}
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\worst}[1]{\uline{#1}}
+\newtcolorbox{problembox}[1][Problem]{%
+  colback=white, colframe=black, boxrule=0.5pt, arc=0pt,
+  left=8pt, right=8pt, top=7pt, bottom=7pt,
+  before upper={\bfseries\sffamily\small #1\par\vspace{3pt}\hrule\vspace{6pt}\normalfont\normalsize}
+}
+\newtcolorbox{scenariobox}[1]{%
+  colback=white, colframe=black, boxrule=0.5pt, arc=0pt,
+  left=8pt, right=8pt, top=7pt, bottom=7pt,
+  before upper={\bfseries\sffamily\small #1\par\vspace{3pt}\hrule\vspace{6pt}\normalfont\normalsize}
+}
+\newtcolorbox{rqbox}[1][RQ]{%
+  colback=white, colframe=black, boxrule=0.5pt, arc=0pt,
+  left=8pt, right=8pt, top=7pt, bottom=7pt,
+  before upper={\bfseries\sffamily\small #1\par\vspace{3pt}\hrule\vspace{6pt}\normalfont\normalsize\itshape}
+}
+\newtcolorbox{quotebox}{%
+  colback=white, colframe=white, boxrule=0pt, arc=0pt,
+  borderline west={2pt}{0pt}{black},
+  left=14pt, right=8pt, top=6pt, bottom=6pt,
+  fontupper=\itshape
+}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+\DefineVerbatimEnvironment{promptverbatim}{Verbatim}{%
+  fontsize=\small, breaklines=true, breakanywhere=true, breaksymbolleft={},
+  frame=single, framesep=2.5mm, rulecolor=\color{black!60},
+}
+\usepackage[pdfa]{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  filecolor=black,
+}
+
+\begin{document}
+\maketitle
+
+\begin{dedication}
+As your future \\
+becomes my past, \\
+eternally \\
+we converge. \\
+\end{dedication}
+
+\acknowledgements
+I would like to express my gratitude to Professor Giorgio Brajnik and Professor Kevin Roitero, for their precious guidance and support throughout the development of this work.
+
+I would also like to thank all my friends and colleagues, my lifelong companion Rachele, my mother Clara, and my father Dario, to whom this work is dedicated.
+
+\chapter+*{AI Usage Disclosure}
+This statement covers the preparation of this work's text and code, not the use of large language models as part of the experimental method, which is described in the relevant chapters as an object of study.
+
+During the preparation of this work, generative AI tools (Anthropic's Claude Sonnet 5 and Claude Opus 5) were used for the following purposes:
+
+\begin{itemize}
+  \item language polishing of author-written text;
+  \item assistance with writing and debugging code for the data pipeline, simulation, and analysis modules;
+  \item assistance with bibliographic research.
+\end{itemize}
+
+The tools are not credited as authors. The author reviewed and edited all AI-assisted content and takes full responsibility for the content of this work.
+
+\tableofcontents
+
+\listoftables
+
+\listoffigures
+
+\mainmatter
+
+\input{chapters/1/entrypoint.tex}
+\input{chapters/2/entrypoint.tex}
+\input{chapters/3/entrypoint.tex}
+\input{chapters/4/entrypoint.tex}
+\input{chapters/5/entrypoint.tex}
+\input{chapters/6/entrypoint.tex}
+\input{chapters/7/entrypoint.tex}
+\input{chapters/8/entrypoint.tex}
+\input{chapters/9/entrypoint.tex}
+
+
+\appendix
+
+\part{Appendices}
+
+\input{chapters/appendix/prompts.tex}
+
+\input{chapters/appendix/layer-sweeps.tex}
+
+\backmatter
+
+\bibliographystyle{plain_\languagename}
+\bibliography{thud}
+
+\end{document}

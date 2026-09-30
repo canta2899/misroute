@@ -1,0 +1,77 @@
+\section{Probing Setup and Routing Task}
+\label{sec:ch7-probing-setup}
+
+\subsection{Coordinator Setup}
+\label{subsec:ch7-coordinator-prompt}
+
+Each model in the pool of Section~\ref{sec:model-choice} is used as the coordinator of the centralized topology described in Section~\ref{subsec:topology-centralized}: a single supervisor that reads one request, single-turn or multi-turn, and routes it to one of the five sub-agents from Section~\ref{subsec:sub-agent-taxonomy}. A system prompt instructs the model on its coordinator role and the routing task that it has to perform, and lists the collision graph of Section~\ref{subsec:collision-graph}. The prompt is shared by all eight models and reported in Appendix~\ref{sec:appendix-coordinator-prompt}.
+
+The coordinator states its routing decision through the function-calling interface described in Section~\ref{sec:structured-output}. Each sub-agent is declared to the model as a tool, and the coordinator routes a request by calling the tool representing the chosen sub-agent exactly once. Each tool's description states the sub-agent's role, the type of concerns that it handles, and an example request that routes to it. Each tool requires no argument from the coordinator. The five tool definitions are reported in Appendix~\ref{sec:appendix-subagent-tools}. The tool declarations are rendered into the prompt alongside the system prompt by the model's own chat template, the same mechanism that Section~\ref{subsec:rendered-example} describes for formatting a prompt and its tool definitions. The model's prediction is therefore obtained by reading which one of the available tools the model invokes.
+
+None of the five sub-agents is implemented: the experiment only records which tool the coordinator invokes.
+
+\subsection{Hidden-State Capture and the Model's Prediction}
+\label{subsec:ch7-hook}
+
+For every request, the same run of the model is used to obtain both the hidden states and the tool call that defines the model's own routing decision. This capture follows the fixed sequence of steps shown in Figure~\ref{fig:hook-sequence}.
+
+\begin{figure}[ht]
+	\centering
+	\vspace{4mm}
+	\begin{tikzpicture}[
+		node distance=5mm,
+		every node/.style={font=\small},
+		seqstep/.style={draw, rounded corners, align=left, text width=0.82\textwidth, inner sep=5pt},
+		seqcapture/.style={draw, dashed, rounded corners, align=left, text width=0.82\textwidth, inner sep=5pt},
+		arr/.style={-{Latex[length=2mm]}}
+		]
+		\node[seqstep] (s1) {\textbf{Step 1:} the request is submitted to the coordinator.};
+		\node[seqstep, below=of s1] (s2) {\textbf{Step 2:} the coordinator processes the request in the prefill step, described in Section~\ref{subsec:prefill-decode}, with no response token generated yet.};
+		\node[seqcapture, below=of s2] (s3) {%
+			\begin{minipage}{\linewidth}
+				\textbf{Step 3:} the hidden states for every layer $\ell$ are read at the last prompt token $n$, by a forward hook registered on every layer through the PyTorch \texttt{nn.Module} API \cite{ModulePyTorch214}.
+				\begin{center}
+					\vspace{2pt}
+					$h^{(\ell)}_n, \quad \forall \ell = 1, \dots, L$
+					\vspace{2pt}
+				\end{center}
+				where $h^{(\ell)}_n$ is the hidden-state vector of layer $\ell$ at the last prompt token $n$, as defined in Section~\ref{subsec:hidden-states}.
+			\end{minipage}
+		};
+		\node[seqstep, below=of s3] (s4) {\textbf{Step 4:} generation proceeds, one token at a time, until termination is reached.};
+		\node[seqstep, below=of s4] (s5) {\textbf{Step 5:} the tool call in the generated response is parsed with the model's own function-calling syntax. The tool call is recorded as the \textbf{model} prediction.};
+		\foreach \x/\y in {s1/s2, s2/s3, s3/s4, s4/s5}
+			\draw[arr] (\x) -- (\y);
+	\end{tikzpicture}
+	\caption[Sequence of steps to capture hidden states and model prediction]{The sequence of steps used to capture the hidden states and the model prediction for one request.}
+	\label{fig:hook-sequence}
+\end{figure}
+
+Submitting a sample of the single or multi-turn dataset to a model provides two additional features for that sample: the hidden states captured at every layer for the last prompt token, and the model prediction. The hidden states are stored as 16-bit floating-point values. The model prediction is considered correct when it matches \texttt{gold}, the correct sub-agent defined for the sample in Section~\ref{subsec:design-factors}.
+
+\subsection{Probe Training}
+\label{subsec:ch7-probe}
+
+For every model and dataset, one \emph{probe} is trained for each layer $\ell$. The probe for layer $\ell$ is trained on the hidden state $h^{(\ell)}_n$ from that same layer, for every sample, to predict the sample's gold sub-agent. This procedure is called a \emph{layer sweep}, and it determines the \emph{optimal layer} $\ell_o$: the layer whose probe reaches the highest accuracy, defined as the fraction of samples for which the probe predicts the correct sub-agent. If more than one layer reaches the highest accuracy, the layer with the lowest index $\ell$, closest to the input, is selected as $\ell_o$.
+
+Each probe is trained as a logistic regression classifier, making it a \emph{linear probe}. Before fitting, each layer's hidden states are standardized to zero mean and unit variance, because they are read before the block's layer normalization is applied, so their scale can vary sharply across dimensions and across models.
+
+A probe is evaluated with the same scenario-grouped 5-fold cross-validation used for the text-only baselines in Section~\ref{subsec:text-only-baselines}: the two near-duplicate queries of an \texttt{adversarial} pair always fall in the same fold, so when one query is held out for testing, its near-duplicate is held out with it, instead of leaking into the training folds.
+
+\subsection{Execution Infrastructure}
+\label{subsec:ch7-infra}
+
+The process described in Section~\ref{subsec:ch7-hook} requires GPU compute, since the model must be loaded in memory and every layer's hidden states must be read during the forward pass. Each run submits one dataset to one model and executes on Modal \cite{ModalDocumentation}, a serverless platform that provisions several kinds of GPU containers on demand. One or more parallel NVIDIA H100 and A100 GPUs are used per run, to guarantee sufficient VRAM to load the unquantized model weights and to submit the requests to the model in batches. A linear probe, instead, requires little computation to train and can therefore be trained locally, on consumer hardware.
+
+\subsection{Metrics}
+\label{subsec:ch7-metrics}
+
+\paragraph{Accuracy.} Accuracy is the fraction of samples for which a classifier predicts the correct sub-agent. The probe and the text-only classifiers of Section~\ref{subsec:text-only-baselines} follow the same procedure, on the same scenario-grouped 5-fold cross-validation of Section~\ref{subsec:ch7-probe}. Each fold is held out once, the classifier is trained on the other four folds, and its accuracy is measured on the held-out fold. The reported accuracy is the mean of the five fold accuracies, taken at the optimal layer $\ell_o$ for the probe. The model is not trained on the dataset, so its predictions do not depend on the folds. Its accuracy is still measured on each of the five folds and averaged, so the model, the probe and the text-only classifiers are scored on the same samples with the same rule.
+
+\paragraph{AUC macro.} AUC (area under the curve) macro is the area under the ROC (receiver operating characteristic) curve of the probe at the optimal layer $\ell_o$, computed once for each sub-agent on the out-of-fold probabilities and averaged with equal weight across the five sub-agents. AUC macro splits the five-way prediction of the probe into five binary problems. The binary problem of a sub-agent $a$ separates the samples whose correct sub-agent is $a$ from the samples of the other four sub-agents, which is how ROC analysis handles more than two classes \cite{fawcettIntroductionROCAnalysis2006}.
+
+For each sample, the probe assigns a probability to $a$, and the sample is predicted as $a$ when this probability is above a cut-off value $t$, called the \emph{threshold}. For a given $t$, the true positive rate is the fraction of samples of $a$ predicted as $a$, and the false positive rate is the fraction of the other samples predicted as $a$. The ROC curve plots the true positive rate against the false positive rate as $t$ varies from 1 to 0 \cite{fawcettIntroductionROCAnalysis2006}. The area under this curve is called \emph{AUC}, or AUROC (area under the receiver operating characteristic curve). If the samples are ranked by the probability assigned to $a$, the AUC is the probability that a randomly chosen sample of $a$ ranks above a randomly chosen sample of another sub-agent \cite{fawcettIntroductionROCAnalysis2006}. AUC macro is the unweighted mean of the five AUC values.
+
+Accuracy depends only on the classification of the probe, which is the sub-agent with the highest probability. AUC macro instead measures the ranking at every threshold, and a classifier can have a perfect ROC curve even when a single fixed threshold misclassifies some samples \cite{fawcettIntroductionROCAnalysis2006}. AUC macro ranges from 0.5, for a probe that ranks samples at random, to 1.0, for a probe that, for every sub-agent $a$, ranks all samples of $a$ above all other samples. For example, the probe may assign probability 0.4 to every sample of $a$ and 0.2 to every other sample. All samples of $a$ rank above the others, so the AUC of $a$ is 1.0, but a threshold of 0.5 predicts no sample as $a$ and leaves every sample of $a$ classified incorrectly.
+
+\paragraph{Significance test.} The difference $\Delta$ between probe accuracy and model accuracy is tested for significance with an exact McNemar test. The test compares two classifiers on the same samples and uses only the samples that exactly one of the two classifies correctly. Its null hypothesis is that the model and the probe have the same accuracy. When several tests are run, the $p$-values are corrected with the Holm method described in Section~\ref{sec:statistical-validation}, and the corrected value is denoted $p_{\text{holm}}$. A difference counts as significant when $p_{\text{holm}}$ is below 0.05. The McNemar test assumes that samples are independent. This assumption does not hold on either dataset, since samples built from the same scenario share their content and the two requests of an \texttt{adversarial} pair share almost all their wording. The test treats every discordant sample as independent evidence against the null hypothesis. A disagreement that repeats across the samples of one scenario is counted once per sample, so the number of independent disagreements is smaller than the number the test uses. The $p$-values are therefore likely to be lower than the true ones, and a result close to the 0.05 threshold should be read with caution.

@@ -1,0 +1,10 @@
+\section{Final Remarks}
+\label{sec:ch9-conclusion}
+
+On requests whose correct sub-agent is difficult to determine from their wording, a linear probe on the hidden state at the last prompt token selects the correct sub-agent more often than the coordinator in seven of the eight models, and more often than the text-only classifiers. Its margin over the coordinator is largest on the requests that the coordinator misroutes most often. The hidden states of a coordinator therefore carry routing information that its stated decision does not reflect and that the wording of the request does not provide. The exception is GPT-OSS 20B, which reasons before it selects a sub-agent. Its last prompt token comes before the point where the routing decision may be formed, so the probing position must be chosen according to the model architecture.
+
+On multi-turn conversations, the probe loses more accuracy than the coordinator in all seven models, so its margin is smaller. The routing information at the last prompt token may therefore be weaker when the request is spread over several turns.
+
+The disagreement between the probe and the coordinator marks the requests that the coordinator is likely to misroute, with a precision above the base error rate of the coordinator in all fourteen runs, although it raises more false positives on multi-turn conversations. When the hidden states of the coordinator are accessible, a flagged request can be stopped or held for human review before it affects the rest of the run.
+
+These results indicate that a linear probe on the hidden states of a coordinator can provide an evaluation signal on its routing decision. Such a probe may support failure attribution and improve the quality of coordinator-based multi-agent systems, because it identifies likely routing failures before they propagate through the rest of the multi-agent trace.
