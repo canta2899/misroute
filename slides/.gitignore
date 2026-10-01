@@ -1,0 +1,12 @@
+# latexmk build output
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.synctex.gz
+/*.pdf

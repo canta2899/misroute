@@ -1,0 +1,6 @@
+# LuaLaTeX, so fontspec can load Fira Sans
+$pdf_mode = 4;
+# moloch v2.2.0, vendored in moloch/ (not installed system-wide)
+ensure_path('TEXINPUTS', './moloch//');
+# beamer's own build files, for make clean
+$clean_ext = 'nav snm vrb';
